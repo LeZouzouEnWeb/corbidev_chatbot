@@ -80,6 +80,8 @@ const modelSelect = document.getElementById('modelSelect');
 const openChatBubbleBtn = document.getElementById('openChatBubble');
 const chatModal = document.getElementById('chatModal');
 const closeChatBtn = document.getElementById('closeChatBtn');
+// Dark mode checkbox (peut ne pas exister sur certaines pages si pas synchronisé)
+const darkModeCheckbox = document.getElementById('darkModeCheckbox');
 
 // Append a message to the chat UI
 // role: 'user' | 'assistant'
@@ -97,7 +99,11 @@ function appendMessage(role, text, skipHistory=false) {
     name.textContent = role === 'user' ? 'Vous' : 'IA';
     const time = document.createElement('span');
     time.className = 'text-xs font-normal text-gray-500';
-    time.textContent = 'Maintenant';
+    // Format: dd-mm-aaaa hh:mm:ss
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const formatted = `${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    time.textContent = formatted;
     profile.appendChild(role === 'user' ? time : name);
     profile.appendChild(role === 'user' ? name : time);
 
@@ -422,6 +428,27 @@ chatContainer.innerHTML = '';
 })();
 // now we can fetch server config and update UI status
 updateKeyStatus();
+// --- Dark mode persistence & toggle ---
+// Appliquer l'état sauvegardé au chargement
+try {
+    const dm = localStorage.getItem('chat_dark_mode');
+    if (dm === '1' && chatModal) {
+        chatModal.classList.add('chat-dark');
+        if (darkModeCheckbox) darkModeCheckbox.checked = true;
+    }
+} catch (e) {}
+// Écouteur sur la case à cocher
+if (darkModeCheckbox) {
+    darkModeCheckbox.addEventListener('change', () => {
+        const enabled = darkModeCheckbox.checked;
+        if (enabled) {
+            chatModal.classList.add('chat-dark');
+        } else {
+            chatModal.classList.remove('chat-dark');
+        }
+        try { localStorage.setItem('chat_dark_mode', enabled ? '1' : '0'); } catch (e) {}
+    });
+}
 // helper: render markdown with custom color tag handling
 function renderAssistantMarkdown(mdText) {
     // Convert custom [color=...] tags to inline styles before parsing markdown
