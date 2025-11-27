@@ -27,7 +27,7 @@ function getHistoryMax() {
   return parseInt(process.env.HISTORY_MAX_MESSAGES || '24', 10);
 }
 const PORT = process.env.PORT || 3000;
-const ENV_PATH = path.join(__dirname, '.env');
+const ENV_PATH = path.join(__dirname, '..', '..', '.env');
 
 // Helper to read boolean-like env values: '1'|'true' -> true, otherwise false
 function boolEnv(name, defaultValue) {
@@ -112,7 +112,7 @@ function buildFallbackMessage(userMessage, stylize = true) {
 // as a system message to the model to bias the assistant's answers when `useKnowledge` is true.
 let knowledgeBase = null;
 try {
-  const kbPath = path.join(__dirname, 'knowledge', 'maine-coon.md');
+  const kbPath = path.join(__dirname, '..', 'knowledge', 'maine-coon.md');
   if (fs.existsSync(kbPath)) {
     knowledgeBase = fs.readFileSync(kbPath, 'utf-8');
     console.log('Knowledge base loaded: Maine Coon');
@@ -124,7 +124,7 @@ try {
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 
 // Dynamically read the max response chars from env
 // Read the configured max allowed response length for assistant replies.
