@@ -59,6 +59,47 @@ function getResourceSites() {
   }).filter(r => r.name && r.url);
 }
 
+// Small helper to detect if the user's message references 'chien' (dog) or 'chat' (cat)
+function detectAnimalFromMessage(s) {
+  if (!s || typeof s !== 'string') return null;
+  const text = s.toLowerCase();
+  if (/\bchien(s)?\b|\bdog(s)?\b|\bcanin\b/.test(text)) return 'dog';
+  if (/\bchat(s)?\b|\bmaine[- ]coon\b|\bfelin\b|\bfélin\b/.test(text)) return 'cat';
+  return null;
+}
+
+// Build a short, readable fallback message with action suggestions and resource links
+function buildFallbackMessage(userMessage, stylize = true) {
+  const defaultSites = getResourceSites();
+  const msgLower = (userMessage || '').toLowerCase();
+  const contextual = [];
+  if (msgLower.includes('maine coon') || msgLower.includes('maine-coon') || msgLower.includes('mainecoon')) {
+    contextual.push({ name: 'Maine Coon — Wikipédia (FR)', url: 'https://fr.wikipedia.org/wiki/Maine_Coon' });
+  }
+  if (msgLower.includes('chat') || msgLower.includes('chats') || msgLower.includes('félin') || msgLower.includes('féline')) {
+    contextual.push({ name: 'Chat — Wikipédia (FR)', url: 'https://fr.wikipedia.org/wiki/Chat' });
+  }
+  const sites = [...contextual, ...defaultSites].slice(0, 6);
+  const sitesText = sites.map(s => `- [${s.name}](${s.url})`).join('\n');
+  const title = stylize ? `[color=#1E90FF]**Information hors-base**[/color]` : `**Information hors-base**`;
+  const resourcesTitle = stylize ? `[color=#16A34A]**Ressources utiles :**[/color]` : `**Ressources utiles :**`;
+  const lines = [
+    `${title}`,
+    `Je suis spécialisé(e) sur les chats (Maine Coon) et je ne trouve pas d'information précise sur ce point dans la base. 😊`,
+    `Souhaitez-vous que je :`,
+    `- **Proposer** une réponse générale (hors-base, non vérifiée)`,
+    `- **Rechercher** des sujets proches dans la base`,
+    `- **Poser** une question pour préciser votre besoin`,
+    `\n${resourcesTitle}`,
+    `${sitesText}`,
+  ];
+  if (stylize) {
+    // Make a small footer hint in muted color
+    lines.push('', `[color=#6B7280]_Je peux aussi fournir des liens externes ou une réponse courte si vous le souhaitez._[/color]`);
+  }
+  return lines.join('\n');
+}
+
 // Load knowledge files for RAG (optional)
 // Optional RAG (retrieval-augmented generation) knowledge base. This file is used
 // as a system message to the model to bias the assistant's answers when `useKnowledge` is true.
@@ -216,6 +257,13 @@ app.post('/chat', async (req, res) => {
     if (sanitized.length > max) sanitized = sanitized.slice(-max);
   }
 
+  // Quick check: if the user asks about dogs but our KB is about cats, return a concise fallback
+  const userMention = detectAnimalFromMessage(message);
+  if (userMention === 'dog' && useKnowledge && knowledgeBase && knowledgeBase.toLowerCase().includes('maine coon')) {
+    const fallback = buildFallbackMessage(message, stylizeResponse);
+    return res.json({ ok: true, reply: fallback, data: null });
+  }
+
   // System message(s): provide constraints, language, and maximum characters
   const messages = [];
   // System constraints: prefer helpful guidance rather than blunt refusals
@@ -225,11 +273,11 @@ app.post('/chat', async (req, res) => {
   //      or give a succinct general answer marked as "hors base" (non vérifiée);
   //   3) never use a blunt single-line "Information non disponible dans la base." as the only reply;
   // - Always respond in French, add at least one emoji, and keep length within MAX_RESPONSE_CHARS.
-  const systemConstraints = `Tu es un assistant en français. Si l'information demandée n'est pas trouvée dans la base de connaissance fournie, ne te contente pas d'écrire "Information non disponible dans la base." comme seule réponse. À la place :
+  const systemConstraints = `Tu es un assistant en français. RÉPONDS DE FAÇON CONCISE (3 courts paragraphes max). Si l'information demandée n'est pas trouvée dans la base de connaissance fournie :
   1) Indique poliment que la base ne contient pas cette information.
   2) Propose au moins une action utile (ex : demander une clarification, proposer une question alternative, ou donner une réponse générale clairement marquée comme "hors base"/approximative).
   3) Si possible, propose du contenu connexe tiré de la base et demande si l'utilisateur souhaite approfondir.
-  Réponse maximum ${getMaxResponseChars()} caractères. Ajoute au moins un emoji pertinent. Sépare chaque paragraphe par une ligne vide.`;
+  Réponse maximum ${getMaxResponseChars()} caractères. Ajoute au moins un emoji pertinent. Sépare chaque paragraphe par une ligne vide. Ne mélange pas les sujets : si l'utilisateur parle de "chien(s)", rappelle que ta base est centrée sur les chats (Maine Coon) et demande si l'utilisateur souhaite une réponse hors-base ou des ressources externes.`;
   messages.push({ role: 'system', content: systemConstraints });
   if (stylizeResponse) {
     messages.push({ role: 'system', content: "Utilise Markdown pour la mise en forme, et ajoute des emojis quand c'est pertinent. Pour les couleurs, le front-end accepte un tag [color=COLOR]Texte[/color] (COLOR est un nom CSS ou hex)." });
@@ -268,7 +316,7 @@ app.post('/chat', async (req, res) => {
     // Based on OpenAI Chat Completions v1 spec
     let reply = (data.choices && data.choices[0] && data.choices[0].message) ? data.choices[0].message.content : null;
     // Post-process the reply to enforce constraints in case the model didn't follow them
-    function formatReply(raw) {
+    function formatReply(raw, userMessage, stylize) {
       if (!raw || typeof raw !== 'string') return raw;
       // normalize CRLF
       let r = raw.replace(/\r\n/g, '\n');
@@ -286,8 +334,40 @@ app.post('/chat', async (req, res) => {
       }
       // If the response is a short rejection like 'Information non disponible dans la base',
       // transform it into a more useful, oriented message for the user.
-      const noInfoRegex = /information non disponible dans la base|information non présente|non disponible dans la base/i;
+      const noInfoRegex = /information non disponible dans la base|information non présente|non disponible dans la base|information introuvable|je ne trouve pas d'information/i;
+      // fallback precomputations used for mismatch and no-info messages
+      const defaultSitesFallback = getResourceSites();
+      const msgLowerFallback = (userMessage || raw || '').toLowerCase();
+      const contextualFallback = [];
+      if (msgLowerFallback.includes('maine coon') || msgLowerFallback.includes('maine-coon') || msgLowerFallback.includes('mainecoon')) {
+        contextualFallback.push({ name: 'Maine Coon — Wikipédia (FR)', url: 'https://fr.wikipedia.org/wiki/Maine_Coon' });
+      }
+      if (msgLowerFallback.includes('chat') || msgLowerFallback.includes('chats') || msgLowerFallback.includes('félin') || msgLowerFallback.includes('féline')) {
+        contextualFallback.push({ name: 'Chat — Wikipédia (FR)', url: 'https://fr.wikipedia.org/wiki/Chat' });
+      }
+      const sitesFallback = [...contextualFallback, ...defaultSitesFallback].slice(0, 6);
+      const sitesTextFallback = sitesFallback.map(s => `- [${s.name}](${s.url})`).join('\n');
+      const altLinesFallback = [
+        `Je suis spécialisé(e) sur les chats (Maine Coon) et je ne trouve pas d'information précise sur ce point dans la base. 😊`,
+        `Souhaitez-vous que je :`,
+        `- propose une réponse générale (hors-base, non vérifiée)`,
+        `- recherche des sujets proches dans la base`,
+        `- vous pose une question pour préciser votre besoin`,
+        `\nRessources utiles :`,
+        `${sitesTextFallback}`
+      ];
+      const altFallback = altLinesFallback.join('\n');
       if (noInfoRegex.test(r)) {
+        // If the user asked about dogs but our KB is about cats, explicitly state the mismatch
+        const mention = detectAnimalFromMessage(userMessage);
+        if (mention === 'dog' && knowledgeBase && knowledgeBase.toLowerCase().includes('maine coon')) {
+          const mismatchMsg = `Je remarque que votre question porte sur un chien, alors que ma base est consacrée aux chats (Maine Coon). Souhaitez-vous que je :`;
+          // Prepend mismatch message but keep everything concise
+          const newAlt = mismatchMsg + '\n\n' + buildFallbackMessage(userMessage, !!stylize);
+          const newAltCps = Array.from(newAlt);
+          if (newAltCps.length > max) return newAltCps.slice(0, max - 3).join('') + '...';
+          return newAlt;
+        }
         // Build a helpful, action-oriented suggestion in French
         const defaultSites = getResourceSites();
         // Add contextual site if the user asked about "Maine Coon" or "chat"
@@ -302,7 +382,8 @@ app.post('/chat', async (req, res) => {
         const sites = [...contextual, ...defaultSites].slice(0, 6);
         // Use Markdown-style links so they render nicely in the front-end
         const sitesText = sites.map(s => `• [${s.name}](${s.url})`).join('\n');
-        const alt = `Je ne trouve pas d'information précise sur ce point dans la base de connaissance. 😊\n\nSouhaitez-vous que je :\n\n• propose une réponse générale (hors-base, non vérifiée) ;\n• cherche des sujets proches contenus dans la base ;\n• vous pose une question de précision pour mieux cibler la recherche ?\n\nVous pouvez aussi consulter ces ressources :\n${sitesText}`;
+        // Use the concise fallback message created from userMessage
+        const alt = buildFallbackMessage(userMessage, !!stylize);
         // keep short and compliant to max length
         const altCps = Array.from(alt);
         if (altCps.length > max) {
@@ -312,7 +393,7 @@ app.post('/chat', async (req, res) => {
       }
       return r;
     }
-    const finalReply = formatReply(reply);
+    const finalReply = formatReply(reply, message, stylizeResponse);
     // Return a trimmed and constrained reply: keep raw response and the original data for debugging
     res.json({ ok: true, reply: finalReply, data });
   } catch (err) {

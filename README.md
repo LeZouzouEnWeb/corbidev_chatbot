@@ -67,6 +67,31 @@ RESOURCE_SITES & recommandations internet
 - Par défaut, le serveur propose Wikipédia (FR), Royal Canin et une recherche Google pour un vétérinaire local.
 - Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante).
  - Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante). Ces liens seront affichés sous forme cliquable dans la discussion.
+ - Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante). Ces liens seront affichés sous forme cliquable dans la discussion.
+
+Styling et rendu (Markdown + couleurs)
+-----------------------------------
+- L'application accepte des réponses en Markdown (titres, listes, liens) et un tag spécial `[color=COLOR]Texte[/color]` pour colorer des fragments.
+- Les messages de fallback sont désormais stylisés : titres soulignés en couleur, options en gras et ressources listées en Markdown cliquable.
+
+Exemple de message stylisé envoyé par le serveur pour les cas hors-base :
+
+```md
+[color=#1E90FF]**Information hors-base**[/color]
+
+Je suis spécialisé(e) sur les chats (Maine Coon) et je ne trouve pas d'information précise sur ce point dans la base. 😊
+
+Souhaitez-vous que je :
+- **Proposer** une réponse générale (hors-base, non vérifiée)
+- **Rechercher** des sujets proches dans la base
+- **Poser** une question pour préciser votre besoin
+
+[color=#16A34A]**Ressources utiles :**[/color]
+- [Wikipédia (FR)](https://fr.wikipedia.org)
+- [Royal Canin (FR)](https://www.royalcanin.com/fr)
+```
+
+Note: `renderAssistantMarkdown()` du front-end convertit les tags `[color=...]` en `style="color:..."` et `marked` affiche le Markdown ; `DOMPurify` nettoie le HTML rendu.
 
 Comportement quand l'information n'est pas dans la base (RAG)
 ------------------------------------------------------------
@@ -75,6 +100,15 @@ Comportement quand l'information n'est pas dans la base (RAG)
   - indique poliment qu'il ne trouve pas d'information dans la base ;
   - propose des choix utiles (ex. : donner une réponse générale non vérifiée, proposer des sujets proches contenus dans la base, ou poser une question de clarification pour mieux cibler la recherche) ;
   - marque explicitement toute information fournise comme "hors base" (approximative) si nécessaire.
+
+Gestion des sujets hors périmètre (ex. chien vs chat)
+----------------------------------------------------
+- Si l'utilisateur pose une question sur un sujet en dehors de la base (par ex. il parle d'un chien alors que la base porte sur les chats — Maine Coon), le chatbot :
+  - le précisera clairement (ex. « ma base se concentre sur les Maine Coon ») ;
+  - proposera des actions (réponse hors-base, recherche de sujet proche, question de clarification) ;
+  - proposera des ressources externes cliquables (définies via `RESOURCE_SITES` / `.env`) pour approfondir.
+
+  Note technique : lorsqu’un message est explicitement hors périmètre (par ex. mention de “chien”), le serveur peut renvoyer directement un message concis et structuré sans faire appel au modèle, afin d’éviter les réponses confuses ou hors sujet.
 
 Exemple: à la place de "Information non disponible dans la base.", l'assistant répondra quelque chose comme :
 > "Je ne trouve pas d'information précise sur ce point dans la base de connaissance. Souhaitez-vous que je propose des éléments généraux (hors base) ou que je vous pose une question pour préciser votre besoin ? 😊"

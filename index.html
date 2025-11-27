@@ -15,8 +15,10 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <style>
+        /* Remplacer le style body pour un fond dégradé subtil */
         body {
             font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         }
 
         /* Masquer la barre de défilement tout en gardant le scroll */
@@ -25,33 +27,150 @@
         }
 
         .no-scrollbar {
+
+                /* Links inside messages */
+                #chat-container a,
+                .bubble-assistant a,
+                .bubble-user a {
+                    color: #4f46e5; /* Indigo-600 */
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    font-weight: 500;
+                }
+                #chat-container a:hover,
+                .bubble-assistant a:hover,
+                .bubble-user a:hover {
+                    color: #6366f1; /* Indigo-500 */
+                    text-decoration-thickness: 2px;
+                }
+                .assistant-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .assistant-link::after {
+                    content: '\2197';
+                    font-size: 0.75rem;
+                    opacity: 0.6;
+                    margin-left: 4px;
+                }
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
 
-        /* Loading spinner dots */
+        /* Loading spinner amélioré avec dégradé */
         .loading-dots {
             display: inline-flex;
             gap: 6px;
             align-items: center;
             justify-content: center;
         }
+
         .loading-dots span {
-            width: 6px;
-            height: 6px;
-            background: #1d4ed8; /* tailwind blue-700 */
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6);
             border-radius: 50%;
             opacity: 0.8;
             transform: translateY(0);
             animation: bounce 1s infinite ease-in-out;
         }
-        .loading-dots span:nth-child(2) { animation-delay: 0.12s; }
-        .loading-dots span:nth-child(3) { animation-delay: 0.24s; }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.12s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.24s;
+        }
 
         @keyframes bounce {
-            0%, 80%, 100% { transform: translateY(0); opacity: 0.8; }
-            40% { transform: translateY(-6px); opacity: 1; }
+            0%,
+            80%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.8;
+            }
+
+            40% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
         }
+
+        /* Ajout de styles pour glassmorphism sur le panel */
+        #chatPanel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Avatar amélioré */
+        .avatar-bot {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .avatar-user {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        /* Bulles de chat avec dégradé subtil */
+        .bubble-assistant {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .bubble-user {
+            background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 100%);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Header avec dégradé */
+        header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Bouton flottant amélioré */
+        #openChatBubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #openChatBubble:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        /* Input focus ring plus joli */
+        #user-input:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            border-color: #6366f1;
+        }
+
+        /* Send button */
+        #sendBtn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #sendBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Modal backdrop plus sombre */
+        #chatModal,
+        #keyModal {
+            backdrop-filter: blur(8px);
+        }
+
+        /* Réorganiser header : grouper checkboxes en dropdown settings pour moins de surcharge */
     </style>
 </head>
 
@@ -59,7 +178,7 @@
 
     <!-- Bulle de chat - bouton flottant en bas à droite -->
     <button id="openChatBubble" aria-haspopup="dialog" aria-expanded="false" aria-label="Ouvrir le chat"
-        class="fixed right-5 bottom-5 z-50 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-transform transform hover:scale-105">
+        class="fixed right-5 bottom-5 z-50 w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center">
         <i data-lucide="message-square" class="w-6 h-6"></i>
     </button>
 
@@ -68,44 +187,67 @@
         <!-- Conteneur Principal du Chatbot -->
         <div id="chatPanel" class="bg-white w-full max-w-md h-[80vh] rounded-2xl shadow-xl flex flex-col overflow-hidden border border-gray-200 relative">
             <!-- HEADER : En-tête du chatbot -->
-            <header class="bg-blue-600 p-4 text-white flex items-center justify-between shadow-sm">
-                <div class="flex items-center gap-2">
-                    <!-- Icône Robot -->
-                    <i data-lucide="bot" class="w-6 h-6"></i>
-                    <h1 class="font-semibold text-lg">Assistant IA</h1>
-                </div>
-                <div id="serverKeyStatus" class="text-xs bg-blue-500 px-2 py-1 rounded-full flex items-center gap-1">
-                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <header class="p-6 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 avatar-bot rounded-2xl flex items-center justify-center">
+                        <i data-lucide="bot" class="w-6 h-6"></i>
+                    </div>
+                    <h1 class="font-bold text-xl">Assistant IA</h1>
+                    </div>
+                    <div id="serverKeyStatus" class="text-sm bg-white/20 px-3 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-sm">
+                        <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span>
                     En ligne
                 </div>
-                <!-- Button to open API key modal -->
-                <button id="openKeyModal" title="Configurer la clé OpenAI" class="ml-2 bg-blue-500/40 rounded px-2 py-1 text-xs">🔑</button>
-                <button id="clearHistoryBtn" title="Effacer la conversation" class="ml-2 bg-red-500/40 hover:bg-red-600/20 rounded px-2 py-1 text-xs">🧹</button>
-                <label class="ml-2 text-xs flex items-center gap-1"><input id="rememberCheckbox" type="checkbox" class="rounded"/> Se souvenir</label>
-                <label class="ml-2 text-xs flex items-center gap-1" title="Utiliser la base de connaissance Maine Coon"><input id="useKnowledgeCheckbox" type="checkbox" class="rounded" checked/> Base de connaissance</label>
-                <label class="ml-2 text-xs flex items-center gap-1" title="Réponses courtes"><input id="shortResponsesCheckbox" type="checkbox" class="rounded"/> Réponses courtes</label>
-                <label class="ml-2 text-xs flex items-center gap-1" title="Styliser les réponses (MD + Emojis + Couleurs)"><input id="stylizedCheckbox" type="checkbox" class="rounded"/> Stylisé</label>
-                <div class="ml-2 text-xs flex items-center gap-1">
-                    <span id="maxCharsDisplay" class="px-2 py-1 rounded bg-blue-400/20 text-blue-700 text-xs">Max: ?</span>
-                    <button id="setMaxCharsBtn" title="Définir la limite de caractères" class="ml-2 bg-blue-500/30 px-2 py-1 rounded text-xs">⚙️</button>
+                <!-- Nouveau dropdown settings au lieu de tous les checkboxes -->
+                <div class="flex items-center gap-2 relative">
+                    <button id="settingsBtn"
+                        class="bg-white/20 hover:bg-white/30 p-2 rounded-xl transition-all flex items-center gap-1 text-sm backdrop-blur-sm">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Options
+                    </button>
+                    <button id="openKeyModal" title="Clé API" class="bg-white/20 hover:bg-white/30 p-2 rounded-xl transition-all">
+                        <i data-lucide="key" class="w-5 h-5"></i>
+                    </button>
+                    <button id="clearHistoryBtn" title="Effacer"
+                        class="bg-white/20 hover:bg-white/30 p-2 rounded-xl transition-all text-red-300">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Settings dropdown inserted so checkboxes exist for the JS logic -->
+                <div id="settingsDropdown"
+                    class="absolute top-full right-6 mt-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-72 border border-white/50 hidden flex flex-col gap-3 z-50">
+                    <label class="flex items-center gap-2 text-sm"><input id="rememberCheckbox" type="checkbox" class="rounded" /> Se
+                        souvenir</label>
+                    <label class="flex items-center gap-2 text-sm"><input id="useKnowledgeCheckbox" type="checkbox" class="rounded"
+                            checked /> Base Maine Coon</label>
+                    <label class="flex items-center gap-2 text-sm"><input id="shortResponsesCheckbox" type="checkbox" class="rounded" />
+                        Réponses courtes</label>
+                    <label class="flex items-center gap-2 text-sm"><input id="stylizedCheckbox" type="checkbox" class="rounded"
+                            checked /> Stylisé</label>
+                    <div class="flex gap-2 items-center">
+                        <span id="maxCharsDisplay" class="px-2 py-1 rounded bg-indigo-100 text-indigo-700 text-xs">Max: 1000</span>
+                        <button id="setMaxCharsBtn" title="Limiter"
+                            class="bg-indigo-500 text-white px-2 py-1 rounded text-xs hover:bg-indigo-600">⚙️</button>
+                    </div>
                 </div>
             </header>
 
             <!-- ZONE DE CHAT : Là où les messages s'affichent -->
             <!-- flex-1 permet de prendre tout l'espace disponible -->
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 no-scrollbar">
+            <div id="chat-container"
+                class="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-slate-50 to-white no-scrollbar">
                 <!-- Exemple de message de l'IA (Message de bienvenue) -->
                 <div class="flex items-start gap-2.5">
-                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                        <i data-lucide="bot" class="w-5 h-5"></i>
+                    <div class="w-10 h-10 avatar-bot rounded-2xl flex items-center justify-center text-white shrink-0">
+                        <i data-lucide="bot" class="w-6 h-6"></i>
                     </div>
                     <div class="flex flex-col gap-1 w-full max-w-[320px]">
                         <div class="flex items-center space-x-2 rtl:space-x-reverse">
-                            <span class="text-sm font-semibold text-gray-900">IA</span>
-                            <span class="text-xs font-normal text-gray-500">Maintenant</span>
+                            <span class="text-sm font-semibold text-slate-900">IA</span>
+                            <span class="text-xs font-normal text-slate-500">Maintenant</span>
                         </div>
-                        <div class="flex flex-col leading-1.5 p-4 border-gray-200 bg-white rounded-e-xl rounded-es-xl shadow-sm">
-                            <p class="text-sm font-normal text-gray-900">Bonjour ! Je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?</p>
+                        <div class="bubble-assistant p-5 rounded-2xl shadow-lg">
+                            <p class="text-sm font-normal text-slate-900 leading-relaxed">Bonjour ! Je suis votre assistant virtuel. Comment
+                                puis-je vous aider aujourd'hui ?</p>
                         </div>
                     </div>
                 </div>
@@ -115,11 +257,11 @@
             <div class="flex items-start gap-2.5 justify-end">
                 <div class="flex flex-col gap-1 w-full max-w-[320px]">
                     <div class="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-                        <span class="text-xs font-normal text-gray-500">Maintenant</span>
-                        <span class="text-sm font-semibold text-gray-900">Vous</span>
+                        <span class="text-xs font-normal text-slate-500">Maintenant</span>
+                        <span class="text-sm font-semibold text-white">Vous</span>
                     </div>
-                    <div class="flex flex-col leading-1.5 p-4 border-gray-200 bg-blue-600 text-white rounded-s-xl rounded-ee-xl shadow-sm">
-                        <p class="text-sm font-normal">Peux-tu m'expliquer le code HTML ?</p>
+                    <div class="bubble-user p-5 rounded-2xl shadow-lg">
+                        <p class="text-sm font-normal text-white leading-relaxed">Peux-tu m'expliquer le code HTML ?</p>
                     </div>
                 </div>
             </div>
@@ -127,23 +269,28 @@
             </div>
 
             <!-- FOOTER : Zone de saisie -->
-            <div class="p-4 bg-white border-t border-gray-100">
-                <form class="flex items-center gap-2" onsubmit="event.preventDefault();">
-                    <input type="text" id="user-input" class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" placeholder="Écrivez votre message...">
-                    <button id="sendBtn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 transition-colors flex items-center justify-center">
-                        <i data-lucide="send" class="w-5 h-5"></i>
+            <div class="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-200/50">
+                <form class="flex items-center gap-3" onsubmit="event.preventDefault();">
+                    <input type="text" id="user-input"
+                        class="flex-1 border-2 border-slate-200 rounded-2xl px-5 py-3 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-500 shadow-sm transition-all"
+                        placeholder="Tapez votre message...">
+                    <button id="sendBtn" type="submit" class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg">
+                        <i data-lucide="send" class="w-6 h-6"></i>
                     </button>
                 </form>
             </div>
 
             <!-- Bouton fermer chat -->
-            <button id="closeChatBtn" aria-label="Fermer le chat" class="absolute right-3 top-3 text-gray-500">✖</button>
+            <button id="closeChatBtn" aria-label="Fermer"
+                class="absolute right-4 top-4 bg-white/80 hover:bg-white p-2 rounded-xl shadow-md transition-all text-slate-600 hover:text-slate-900">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
         </div>
     </div>
 
     <!-- API Key Modal -->
     <div id="keyModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
-        <div class="bg-white rounded-md shadow-lg p-6 w-full max-w-md">
+        <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-white/50">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold">Clé OpenAI</h2>
                 <button id="closeKeyModal" class="text-gray-500">✖</button>
@@ -210,16 +357,16 @@
                     try { HISTORY_MAX_MESSAGES = parseInt(j.historyMaxMessages, 10) || HISTORY_MAX_MESSAGES; } catch (e) {}
                 }
                 // update default UI flags coming from server config
-                if (typeof j.defaultUseKnowledge !== 'undefined' && !localStorage.getItem('use_knowledge')) {
+                if (typeof j.defaultUseKnowledge !== 'undefined' && !localStorage.getItem('use_knowledge') && useKnowledgeCheckbox) {
                     useKnowledgeCheckbox.checked = !!j.defaultUseKnowledge;
                 }
-                if (typeof j.defaultStylizeResponse !== 'undefined' && !localStorage.getItem('stylized_response')) {
+                if (typeof j.defaultStylizeResponse !== 'undefined' && !localStorage.getItem('stylized_response') && stylizedCheckbox) {
                     stylizedCheckbox.checked = !!j.defaultStylizeResponse;
                 }
-                if (typeof j.defaultShortResponse !== 'undefined' && !localStorage.getItem('short_responses')) {
+                if (typeof j.defaultShortResponse !== 'undefined' && !localStorage.getItem('short_responses') && shortResponsesCheckbox) {
                     shortResponsesCheckbox.checked = !!j.defaultShortResponse;
                 }
-                if (typeof j.defaultRememberHistory !== 'undefined' && !localStorage.getItem('remember_history')) {
+                if (typeof j.defaultRememberHistory !== 'undefined' && !localStorage.getItem('remember_history') && rememberCheckbox) {
                     rememberCheckbox.checked = !!j.defaultRememberHistory;
                     rememberHistory = !!j.defaultRememberHistory;
                 }
@@ -274,7 +421,7 @@
             profile.appendChild(role === 'user' ? name : time);
 
             const bubble = document.createElement('div');
-            bubble.className = role === 'user' ? 'leading-1.5 p-4 border-gray-200 bg-blue-600 text-white rounded-s-xl rounded-ee-xl shadow-sm' : 'leading-1.5 p-4 border-gray-200 bg-white rounded-e-xl rounded-es-xl shadow-sm';
+            bubble.className = role === 'user' ? 'leading-1.5 p-4 border-gray-200 bg-blue-600 text-white rounded-s-xl rounded-ee-xl shadow-sm bubble-user' : 'leading-1.5 p-4 border-gray-200 bg-white rounded-e-xl rounded-es-xl shadow-sm bubble-assistant';
             // Assistant messages are treated as Markdown and sanitized
             if (role === 'assistant') {
                 // Render markdown + sanitize + convert color tags
@@ -282,7 +429,7 @@
                     const html = renderAssistantMarkdown(text);
                     bubble.innerHTML = html;
                 } catch (e) {
-                    bubble.innerHTML = '<p class="text-sm font-normal">' + text.replace(/\n/g, '<br>') + '</p>';
+                    bubble.innerHTML = '<p class="text-sm font-normal text-gray-900">' + text.replace(/\n/g, '<br>') + '</p>';
                 }
             } else {
                 bubble.innerHTML = '<p class="text-sm font-normal">' + text.replace(/\n/g, '<br>') + '</p>';
@@ -317,7 +464,7 @@
             wrapper.className = 'flex items-start gap-2.5';
             wrapper.id = 'loadingBubble';
             const profile = document.createElement('div');
-            profile.className = 'w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600';
+            profile.className = 'w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 avatar-bot';
             profile.innerHTML = '<i data-lucide="bot" class="w-5 h-5"></i>';
             const inner = document.createElement('div');
             inner.className = 'flex flex-col gap-1 w-full max-w-[320px]';
@@ -356,7 +503,7 @@
                 const res = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text, model: modelSelect.value, history: historyToSend, useKnowledge: useKnowledgeCheckbox.checked, shortResponse: shortResponsesCheckbox.checked, stylizeResponse: stylizedCheckbox.checked })
+                    body: JSON.stringify({ message: text, model: modelSelect.value, history: historyToSend, useKnowledge: (useKnowledgeCheckbox ? useKnowledgeCheckbox.checked : true), shortResponse: (shortResponsesCheckbox ? shortResponsesCheckbox.checked : false), stylizeResponse: (stylizedCheckbox ? stylizedCheckbox.checked : true) })
                 });
                 const json = await res.json();
                 if (!json.ok) {
@@ -482,26 +629,28 @@
         const stylizedCheckbox = document.getElementById('stylizedCheckbox');
         const setMaxCharsBtn = document.getElementById('setMaxCharsBtn');
         rememberHistory = !!localStorage.getItem('remember_history');
-        rememberCheckbox.checked = rememberHistory;
+                                if (rememberCheckbox) rememberCheckbox.checked = rememberHistory;
         // Restore persisted setting for knowledge base
         try {
             const s = localStorage.getItem('use_knowledge');
-            if (s !== null) {
-                useKnowledgeCheckbox.checked = s === '1';
-            } else {
-                useKnowledgeCheckbox.checked = true; // default
+            if (useKnowledgeCheckbox) {
+                if (s !== null) {
+                    useKnowledgeCheckbox.checked = s === '1';
+                } else {
+                    useKnowledgeCheckbox.checked = true; // default
+                }
             }
-        } catch (e) { useKnowledgeCheckbox.checked = true; }
+        } catch (e) { if (useKnowledgeCheckbox) useKnowledgeCheckbox.checked = true; }
         // restore short response setting
         try {
             const r = localStorage.getItem('short_responses');
-            shortResponsesCheckbox.checked = r === '1';
-        } catch (e) { shortResponsesCheckbox.checked = false; }
+            if (shortResponsesCheckbox) shortResponsesCheckbox.checked = r === '1';
+        } catch (e) { if (shortResponsesCheckbox) shortResponsesCheckbox.checked = false; }
         // restore stylized setting
         try {
             const r = localStorage.getItem('stylized_response');
-            stylizedCheckbox.checked = r === '1';
-        } catch (e) { stylizedCheckbox.checked = true; }
+            if (stylizedCheckbox) stylizedCheckbox.checked = r === '1';
+        } catch (e) { if (stylizedCheckbox) stylizedCheckbox.checked = true; }
 
         // Clear the conversation both in-memory and in localStorage
         clearHistoryBtn.addEventListener('click', () => {
@@ -512,7 +661,8 @@
         });
 
         // Toggle memory persistence: when enabled, conversationHistory is also saved to localStorage
-        rememberCheckbox.addEventListener('change', () => {
+                                if (rememberCheckbox) {
+                                rememberCheckbox.addEventListener('change', () => {
             rememberHistory = rememberCheckbox.checked;
             try {
                 localStorage.setItem('remember_history', rememberHistory ? '1' : '0');
@@ -522,17 +672,24 @@
             } else {
                 try { localStorage.setItem('chat_history', JSON.stringify(conversationHistory)); } catch (e) { }
             }
-        });
+                            });
+                            }
 
-        useKnowledgeCheckbox.addEventListener('change', () => {
-            try { localStorage.setItem('use_knowledge', useKnowledgeCheckbox.checked ? '1' : '0'); } catch (e) { }
-        });
-        shortResponsesCheckbox.addEventListener('change', () => {
-            try { localStorage.setItem('short_responses', shortResponsesCheckbox.checked ? '1' : '0'); } catch (e) { }
-        });
-        stylizedCheckbox.addEventListener('change', () => {
-            try { localStorage.setItem('stylized_response', stylizedCheckbox.checked ? '1' : '0'); } catch (e) { }
-        });
+                                if (useKnowledgeCheckbox) {
+                                useKnowledgeCheckbox.addEventListener('change', () => {
+                                    try { localStorage.setItem('use_knowledge', useKnowledgeCheckbox.checked ? '1' : '0'); } catch (e) { }
+                                });
+                                }
+                                if (shortResponsesCheckbox) {
+                                shortResponsesCheckbox.addEventListener('change', () => {
+                                    try { localStorage.setItem('short_responses', shortResponsesCheckbox.checked ? '1' : '0'); } catch (e) { }
+                                });
+                                }
+                                if (stylizedCheckbox) {
+                                stylizedCheckbox.addEventListener('change', () => {
+                                    try { localStorage.setItem('stylized_response', stylizedCheckbox.checked ? '1' : '0'); } catch (e) { }
+                                });
+                            }
 
         // Allow the user to set the MAX_RESPONSE_CHARS server-side through /set-config
         if (setMaxCharsBtn) {
@@ -556,9 +713,7 @@
             });
         }
 
-        useKnowledgeCheckbox.addEventListener('change', () => {
-            try { localStorage.setItem('use_knowledge', useKnowledgeCheckbox.checked ? '1' : '0'); } catch (e) { }
-        });
+                    // useKnowledge change listener is attached conditionally above (if element exists)
 
         // Hydrate persisted conversation from localStorage if present (and render it without duplicating history)
         chatContainer.innerHTML = '';
@@ -594,10 +749,34 @@
             // Use marked to parse markdown → HTML
             const rawHtml = marked.parse(colored);
             // sanitize
-            const safe = DOMPurify.sanitize(rawHtml, {ALLOWED_ATTR: ['href', 'target', 'style', 'class']});
-            // Add emoji span styling (small touch)
-            return `<p class="text-sm font-normal">${safe}</p>`;
+            const safe = DOMPurify.sanitize(rawHtml, { ALLOWED_ATTR: ['href', 'target', 'style', 'class'] });
+            // Ensure anchors open in a new tab and are secure (rel=noopener noreferrer)
+            const wrapper = document.createElement('div');
+            wrapper.className = 'text-sm font-normal';
+            wrapper.innerHTML = safe;
+            const anchors = wrapper.querySelectorAll('a');
+            anchors.forEach(a => {
+                a.setAttribute('target', '_blank');
+                // Ensure security attributes
+                const existingRel = (a.getAttribute('rel') || '');
+                const relParts = new Set(existingRel.split(' ').filter(Boolean));
+                relParts.add('noopener'); relParts.add('noreferrer');
+                a.setAttribute('rel', Array.from(relParts).join(' '));
+                // Add a helper class for styling
+                a.classList.add('assistant-link');
+            });
+            return wrapper.innerHTML;
         }
+
+    document.getElementById('settingsBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = document.getElementById('settingsDropdown');
+        dropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        document.getElementById('settingsDropdown').classList.add('hidden');
+    });
     </script>
 </body>
 
