@@ -1,10 +1,10 @@
 // Server: express
-// Purpose: Provide a tiny backend that proxies requests to the OpenAI API,
+// Purpose: Provide a tiny backend that proxies requests to the OpenRouter API (compatible OpenAI),
 // stores a local API key for easier testing (in `.env`) and exposes endpoints
 // to configure model, response length, token usage, and other defaults.
 //
 // The server reads values from `.env` including:
-// - OPENAI_API_KEY, OPENAI_MODEL
+// - OPENROUTER_API_KEY, OPENROUTER_MODEL
 // - HISTORY_MAX_MESSAGES, MAX_RESPONSE_CHARS, MAX_TOKENS, PORT
 // - DEFAULT_USE_KNOWLEDGE, DEFAULT_STYLIZE_RESPONSE, DEFAULT_SHORT_RESPONSE, DEFAULT_REMEMBER_HISTORY
 const express = require('express');
@@ -167,9 +167,9 @@ app.post('/set-key', (req, res) => {
   if (!key) return res.status(400).json({ ok: false, error: 'API key missing' });
 
   try {
-    setEnv('OPENAI_API_KEY', key);
+    setEnv('OPENROUTER_API_KEY', key);
     // Update in-memory env value so the server can use it immediately (no restart required)
-    process.env.OPENAI_API_KEY = key;
+    process.env.OPENROUTER_API_KEY = key;
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -185,8 +185,8 @@ app.post('/set-model', (req, res) => {
   const { model } = req.body;
   if (!model) return res.status(400).json({ ok: false, error: 'Model missing' });
   try {
-    setEnv('OPENAI_MODEL', model);
-    process.env.OPENAI_MODEL = model;
+    setEnv('OPENROUTER_MODEL', model);
+    process.env.OPENROUTER_MODEL = model;
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -246,8 +246,8 @@ app.post('/set-config', (req, res) => {
 // Forwards the message (with bounded history) to OpenAI's Chat Completions API
 // and returns the assistant reply. The server enforces some system prompts and length limits.
 app.post('/chat', async (req, res) => {
-  const OPENAI_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_KEY) return res.status(400).json({ ok: false, error: 'OpenAI key not configured on server' });
+  const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_KEY) return res.status(400).json({ ok: false, error: 'OpenRouter key not configured on server' });
 
   // Read defaults from environment if the client doesn't specify them
   const envDefaultUseKnowledge = boolEnv('DEFAULT_USE_KNOWLEDGE', true);
@@ -297,15 +297,15 @@ app.post('/chat', async (req, res) => {
   messages.push(...sanitized);
   // finally the user message
   messages.push({ role: 'user', content: message });
-  // Accept optional model from client; fallback to env var or default (gpt-4o-mini)
-  const model = req.body.model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  // Accept optional model from client; fallback to env var or default (x-ai/grok-4.1-fast:free)
+  const model = req.body.model || process.env.OPENROUTER_MODEL || 'x-ai/grok-4.1-fast:free';
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'Authorization': `Bearer ${OPENROUTER_KEY}`,
       },
       body: JSON.stringify({
         model,
@@ -412,8 +412,8 @@ app.post('/chat', async (req, res) => {
 app.get('/config', (req, res) => {
   res.json({
     ok: true,
-    keySet: !!process.env.OPENAI_API_KEY,
-    model: process.env.OPENAI_MODEL || null,
+    keySet: !!process.env.OPENROUTER_API_KEY,
+    model: process.env.OPENROUTER_MODEL || null,
     maxResponseChars: getMaxResponseChars(),
     historyMaxMessages: getHistoryMax(),
     port: process.env.PORT || PORT,

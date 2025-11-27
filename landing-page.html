@@ -560,7 +560,7 @@
         class="fixed right-5 bottom-5 z-50 w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center">
         <i data-lucide="message-square" class="w-6 h-6"></i>
     </button>
-    
+
     <div id="chatModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
         <div id="chatPanel"
             class="bg-white w-full max-w-md h-[80vh] rounded-2xl shadow-xl flex flex-col overflow-hidden border border-gray-200 relative">
@@ -645,26 +645,24 @@
                     data-lucide="x" class="w-5 h-5"></i></button>
         </div>
     </div>
-    
+
     <!-- API Key modal -->
     <div id="keyModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
         <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-white/50">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold">Clé OpenAI</h2>
+                <h2 class="text-lg font-semibold">Clé OpenRouter</h2>
                 <button id="closeKeyModal" class="text-gray-500">✖</button>
             </div>
             <div class="space-y-3">
-                <p class="text-sm text-gray-600">Entrez votre clé OpenAI (ex: sk-... ). Elle sera enregistrée localement
+                <p class="text-sm text-gray-600">Entrez votre clé OpenRouter (ex: sk-or-... ). Elle sera enregistrée localement
                     dans <code>.env</code>.</p>
                 <input id="apiKeyInput" class="w-full border px-3 py-2 rounded" placeholder="sk-xxx..." />
                 <div class="pt-2">
                     <label for="modelSelect" class="text-sm text-gray-600">Choisir le modèle</label>
                     <select id="modelSelect" class="w-full border px-3 py-2 rounded mt-1">
+                        <option value="x-ai/grok-4.1-fast:free" selected>x-ai/grok-4.1-fast:free</option>
                         <option value="gpt-4o-mini">gpt-4o-mini</option>
-                        <option value="gpt-4o">gpt-4o</option>
                         <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
-                        <option value="text-davinci-003">text-davinci-003</option>
                     </select>
                 </div>
                 <div class="flex items-center justify-between gap-2">
@@ -677,7 +675,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Chat widget script -->
     <script src="script-chatbot.js"></script>
 

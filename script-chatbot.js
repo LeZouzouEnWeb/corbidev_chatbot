@@ -2,7 +2,7 @@
 // Frontend: UI logic for the chat widget.
 // Purpose:
 // - Small floating bubble opens a modal chat window
-// - Users can set their OpenAI API key locally, choose a model, and send messages
+// Users can set their OpenRouter API key locally, choose a model, and send messages
 // - Messages are persisted (optionally) in localStorage to maintain conversation
 // - The assistant's responses are rendered as sanitized HTML using marked + DOMPurify
 // Security note: API keys are saved to `.env` on the server for convenience in this demo.
