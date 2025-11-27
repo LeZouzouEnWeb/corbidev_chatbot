@@ -66,7 +66,8 @@ let rememberHistory = false;
 // UI references
 const chatContainer = document.getElementById('chat-container');
 const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('sendBtn');
+// Prefer modal send button id if present, otherwise fallback to old id
+const sendBtn = document.getElementById('sendBtnModal') || document.getElementById('sendBtn');
 const openKeyModalBtn = document.getElementById('openKeyModal');
 const keyModal = document.getElementById('keyModal');
 const closeKeyModalBtn = document.getElementById('closeKeyModal');
@@ -101,7 +102,7 @@ function appendMessage(role, text, skipHistory=false) {
     profile.appendChild(role === 'user' ? name : time);
 
     const bubble = document.createElement('div');
-    bubble.className = role === 'user' ? 'leading-1.5 p-4 border-gray-200 bg-blue-600 text-white rounded-s-xl rounded-ee-xl shadow-sm bubble-user' : 'leading-1.5 p-4 border-gray-200 bg-white rounded-e-xl rounded-es-xl shadow-sm bubble-assistant';
+    bubble.className = role === 'user' ? 'leading-1.5 p-4 border-gray-200 bg-blue-600 text-white rounded-s-xl rounded-ee-xl shadow-sm bubble-user' : 'leading-1.5 p-4 border-gray-200 bg-white text-gray-900 rounded-e-xl rounded-es-xl shadow-sm bubble-assistant';
     // Assistant messages are treated as Markdown and sanitized
     if (role === 'assistant') {
         // Render markdown + sanitize + convert color tags
@@ -170,34 +171,38 @@ function hideLoading() {
 }
 
 // Form submission: send user's message to the server via POST /chat, including conversation history
-document.querySelector('form').addEventListener('submit', async () => {
-    const text = userInput.value.trim();
-    if (!text) return;
-    // send previous history to server, not including current input
-    const historyToSend = conversationHistory.slice();
-    appendMessage('user', text);
-    showLoading();
-    userInput.value = '';
-    try {
-        // POST /chat: message payload includes `message`, `model`, `history`, and UI flags
-        const res = await fetch('/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, model: modelSelect.value, history: historyToSend, useKnowledge: (useKnowledgeCheckbox ? useKnowledgeCheckbox.checked : true), shortResponse: (shortResponsesCheckbox ? shortResponsesCheckbox.checked : false), stylizeResponse: (stylizedCheckbox ? stylizedCheckbox.checked : true) })
-        });
-        const json = await res.json();
-        if (!json.ok) {
+// Listen specifically to the chat modal form (not other page forms)
+const chatForm = document.getElementById('chatForm');
+if (chatForm) {
+    chatForm.addEventListener('submit', async () => {
+        const text = userInput.value.trim();
+        if (!text) return;
+        // send previous history to server, not including current input
+        const historyToSend = conversationHistory.slice();
+        appendMessage('user', text);
+        showLoading();
+        userInput.value = '';
+        try {
+            // POST /chat: message payload includes `message`, `model`, `history`, and UI flags
+            const res = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, model: modelSelect.value, history: historyToSend, useKnowledge: (useKnowledgeCheckbox ? useKnowledgeCheckbox.checked : true), shortResponse: (shortResponsesCheckbox ? shortResponsesCheckbox.checked : false), stylizeResponse: (stylizedCheckbox ? stylizedCheckbox.checked : true) })
+            });
+            const json = await res.json();
+            if (!json.ok) {
+                hideLoading();
+                appendMessage('assistant', 'Erreur: ' + (json.error || 'réponse inattendue')); // assistant alias
+                return;
+            }
             hideLoading();
-            appendMessage('assistant', 'Erreur: ' + (json.error || 'réponse inattendue')); // assistant alias
-            return;
+            appendMessage('assistant', json.reply || 'Aucune réponse');
+        } catch (err) {
+            hideLoading();
+            appendMessage('assistant', 'Erreur lors de la requête: ' + err.message);
         }
-        hideLoading();
-        appendMessage('assistant', json.reply || 'Aucune réponse');
-    } catch (err) {
-        hideLoading();
-        appendMessage('assistant', 'Erreur lors de la requête: ' + err.message);
-    }
-});
+    });
+}
 
 // Modal open/close handlers
 openKeyModalBtn.addEventListener('click', () => keyModal.classList.remove('hidden'));
@@ -234,9 +239,8 @@ document.addEventListener('keydown', (e) => {
         openChatBubbleBtn.setAttribute('aria-expanded', 'false');
         openChatBubbleBtn.focus();
     }
-});
 
-// Save the API key on the server for convenience. Reminder: do not do this for production.
+});
 saveKeyBtn.addEventListener('click', async () => {
     const key = apiKeyInput.value.trim();
     if (!key) { modalStatus.textContent = 'Clé manquante'; return; }

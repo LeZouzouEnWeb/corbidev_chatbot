@@ -140,26 +140,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Exemple de message Utilisateur (Pour visualiser le design) -->
-                <!--
-            <div class="flex items-start gap-2.5 justify-end">
-                <div class="flex flex-col gap-1 w-full max-w-[320px]">
-                    <div class="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-                        <span class="text-xs font-normal text-slate-500">Maintenant</span>
-                        <span class="text-sm font-semibold text-white">Vous</span>
-                    </div>
-                    <div class="bubble-user p-5 rounded-2xl shadow-lg">
-                        <p class="text-sm font-normal text-white leading-relaxed">Peux-tu m'expliquer le code HTML ?</p>
-                    </div>
-                </div>
-            </div>
-            -->
             </div>
 
             <!-- FOOTER : Zone de saisie -->
             <div class="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-200/50">
-                <form class="flex items-center gap-3" onsubmit="event.preventDefault();">
+                <form id="chatForm" class="flex items-center gap-3" onsubmit="event.preventDefault();">
                     <input type="text" id="user-input"
                         class="flex-1 border-2 border-slate-200 rounded-2xl px-5 py-3 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-500 shadow-sm transition-all"
                         placeholder="Tapez votre message...">

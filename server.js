@@ -82,20 +82,27 @@ function buildFallbackMessage(userMessage, stylize = true) {
   const sites = [...contextual, ...defaultSites].slice(0, 6);
   const sitesText = sites.map(s => `- [${s.name}](${s.url})`).join('\n');
   const title = stylize ? `[color=#1E90FF]**Information hors-base**[/color]` : `**Information hors-base**`;
-  const resourcesTitle = stylize ? `[color=#16A34A]**Ressources utiles :**[/color]` : `**Ressources utiles :**`;
+  const resourcesTitle = stylize ? `🌎 [color=#16A34A]**Ressources utiles :**[/color]` : `🌎 **Ressources utiles :**`;
   const lines = [
     `${title}`,
     `Je suis spécialisé(e) sur les chats (Maine Coon) et je ne trouve pas d'information précise sur ce point dans la base. 😊`,
+    ``,
     `Souhaitez-vous que je :`,
-    `- **Proposer** une réponse générale (hors-base, non vérifiée)`,
-    `- **Rechercher** des sujets proches dans la base`,
-    `- **Poser** une question pour préciser votre besoin`,
-    `\n${resourcesTitle}`,
+    ``,
+    `**1️⃣ Propose** une réponse générale (hors-base, non vérifiée)`,
+    ``,
+    `**2️⃣ Recherche** des sujets proches dans la base`,
+    ``,
+    `**3️⃣ Pose** une question pour préciser votre besoin`,
+    ``,
+    `💡 _Vous pouvez simplement répondre avec le chiffre de votre choix (1, 2 ou 3)._`,
+    ``,
+    `${resourcesTitle}`,
     `${sitesText}`,
   ];
   if (stylize) {
     // Make a small footer hint in muted color
-    lines.push('', `[color=#6B7280]_Je peux aussi fournir des liens externes ou une réponse courte si vous le souhaitez._[/color]`);
+    lines.push('', `📎 [color=#6B7280]_Je peux aussi fournir des liens externes ou une réponse courte si vous le souhaitez._[/color]`);
   }
   return lines.join('\n');
 }
