@@ -1,0 +1,115 @@
+/* Chatbot styles extracted from index.html */
+
+/* Loading spinner amélioré avec dégradé */
+.loading-dots {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(45deg, #6366f1, #8b5cf6);
+    border-radius: 50%;
+    opacity: 0.8;
+    transform: translateY(0);
+    animation: bounce 1s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.12s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.24s;
+}
+
+@keyframes bounce {
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.8;
+    }
+
+    40% {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+/* Ajout de styles pour glassmorphism sur le panel */
+#chatPanel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Avatar amélioré */
+.avatar-bot {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.avatar-user {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+/* Bulles de chat avec dégradé subtil */
+.bubble-assistant {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.bubble-user {
+    background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 100%);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+}
+
+/* Header avec dégradé (scoped to chat panel header) */
+#chatPanel header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+/* Bouton flottant amélioré */
+#openChatBubble {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#openChatBubble:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+}
+
+/* Input focus ring plus joli */
+#user-input:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+}
+
+/* Send button */
+#sendBtn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    transition: all 0.3s ease;
+}
+
+#sendBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Modal backdrop plus sombre */
+#chatModal,
+#keyModal {
+    backdrop-filter: blur(8px);
+}
+
+/* Réorganiser header : grouper checkboxes en dropdown settings pour moins de surcharge */
