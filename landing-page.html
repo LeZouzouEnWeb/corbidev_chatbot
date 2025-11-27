@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ChatAid — Chatbot IA pour refuges & associations</title>
+    <meta name="description"
+        content="ChatAid : chatbot IA conçu pour refuges et associations de protection animale — adoption, dons, signalements et support 24/7." />
+    <meta name="theme-color" content="#0b6efd" />
+    <link rel="icon" href="data:,">
+    <style>
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #94a3b8;
+            --accent: #0b6efd;
+            --accent-600: #0957d1;
+            --accent-100: #e6f0ff;
+            --surface: #0b1220;
+            --glass: rgba(255, 255, 255, 0.03);
+            --success: #16a34a;
+            --danger: #ef4444;
+            --radius: 12px;
+            --max-width: 1100px;
+            --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+
+        /* Reset */
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            background: linear-gradient(180deg, #071025 0%, #071428 60%);
+            color: #e6eef8;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: var(--max-width);
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #2aa0ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 6px 20px rgba(11, 110, 253, 0.18);
+        }
+
+        nav {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        nav a {
+            color: var(--accent-100);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 8px
+        }
+
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.02)
+        }
+
+        /* Hero */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 28px;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .hero-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: 0 6px 30px rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0 0 10px
+        }
+
+        p.lead {
+            color: var(--muted);
+            margin: 0 0 18px
+        }
+
+        .ctas {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 0;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--accent), var(--accent-600));
+            color: white;
+            box-shadow: 0 6px 18px rgba(11, 110, 253, 0.18)
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--accent-100);
+            border: 1px solid rgba(255, 255, 255, 0.03)
+        }
+
+        /* Feature list */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 18px
+        }
+
+        .feature {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.02)
+        }
+
+        .feature .tag {
+            min-width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700
+        }
+
+        /* Demo chat */
+        .chat-demo {
+            background: linear-gradient(180deg, #071023, #071528);
+            border-radius: 14px;
+            padding: 12px;
+            color: var(--muted);
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .chat-window {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .bubble {
+            max-width: 80%;
+            padding: 10px 12px;
+            border-radius: 12px
+        }
+
+        .from-user {
+            align-self: flex-end;
+            background: #07345a;
+            color: white;
+            border-bottom-right-radius: 4px
+        }
+
+        .from-bot {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--muted);
+            border-bottom-left-radius: 4px
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding-top: 8px
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: transparent;
+            color: inherit
+        }
+
+        .chat-input button {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--accent);
+            border: 0;
+            color: white;
+            cursor: pointer
+        }
+
+        /* Pricing / cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 28px 0
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03)
+        }
+
+        .price {
+            font-size: 22px;
+            font-weight: 800;
+            margin-top: 8px;
+            color: var(--accent-100)
+        }
+
+        /* FAQ */
+        .faq {
+            margin-top: 18px
+        }
+
+        .faq-item {
+            background: var(--glass);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.02)
+        }
+
+        .faq-question {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer
+        }
+
+        .faq-answer {
+            margin-top: 8px;
+            color: var(--muted);
+            display: none
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 34px;
+            padding: 18px;
+            border-radius: 10px;
+            background: transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--muted);
+            flex-wrap: wrap;
+            gap: 12px
+        }
+
+        .small {
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        /* Responsive */
+        @media (max-width:980px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .cards {
+                grid-template-columns: 1fr
+            }
+
+            .features {
+                grid-template-columns: 1fr
+            }
+        }
+
+        /* Accessibility focus */
+        a:focus,
+        button:focus,
+        input:focus {
+            outline: 3px solid rgba(11, 110, 253, 0.18);
+            outline-offset: 3px
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" role="main">
+        <header aria-label="En-tête du site">
+            <a class="brand" href="#" aria-label="ChatAid — page d'accueil">
+                <div class="logo" aria-hidden="true">CA</div>
+                <div>
+                    <div style="font-weight:800">ChatAid</div>
+                    <div style="font-size:13px;color:var(--muted)">Chatbot IA pour refuges & associations</div>
+                </div>
+            </a>
+            <nav aria-label="Navigation principale">
+                <a href="#features">Fonctionnalités</a>
+                <a href="#pricing">Tarifs</a>
+                <a href="#faq">FAQ</a>
+                <a class="btn btn-primary" href="#contact">Essai gratuit</a>
+            </nav>
+        </header>
+
+        <section class="hero" aria-label="Section principale">
+            <div class="hero-card" aria-labelledby="hero-title">
+                <h1 id="hero-title">Automatisez l’accueil, les signalements et les dons — sans effort.</h1>
+                <p class="lead">ChatAid est un chatbot IA conçu pour refuges et associations de protection animale :
+                    réponses 24/7, tri des signalements, prise de RDV d'adoption, suivi donateurs et intégration à votre
+                    CRM.</p>
+                <div class="ctas" role="group" aria-label="Appels à l'action">
+                    <a class="btn btn-primary" id="startTrial" href="#contact">Lancer un essai gratuit</a>
+                    <a class="btn btn-ghost" href="#features">Voir les fonctionnalités</a>
+                </div>
+
+                <div class="features" id="features" style="margin-top:18px;">
+                    <div class="feature">
+                        <div class="tag">24/7</div>
+                        <div><strong>Support 24/7</strong>
+                            <div class="small">Réponses aux questions fréquentes, disponibles toute la journée.</div>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="tag">🚑</div>
+                        <div><strong>Signalements rapides</strong>
+                            <div class="small">Formulaire intelligent pour signaler animaux/urgences.</div>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="tag">🤝</div>
+                        <div><strong>Gestion des bénévoles</strong>
+                            <div class="small">Planning, onboarding et redirection des demandes complexes.</div>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="tag">💳</div>
+                        <div><strong>Dons simplifiés</strong>
+                            <div class="small">Encaissement guidé, relances et suivi des donateurs.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:18px;font-size:13px;color:var(--muted)">
+                    <strong>Conforme RGPD</strong> — possibilité d’hébergement en France / UE & contrôles de
+                    confidentialité.
+                </div>
+            </div>
+
+            <aside class="chat-demo" aria-label="Démo chat">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px">
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <div style="width:10px;height:10px;border-radius:50%;background:#16a34a"></div>
+                        <div style="font-weight:700">Démo Chat</div>
+                    </div>
+                    <div style="font-size:13px;color:var(--muted)">Interaction simulée</div>
+                </div>
+
+                <div class="chat-window" id="chatWindow" aria-live="polite" aria-atomic="false">
+                    <div class="bubble from-bot" id="b1">Bonjour 👋 Je suis ChatAid — comment puis-je aider votre
+                        association aujourd'hui ?</div>
+                    <div class="bubble from-user">Nous avons trouvé un chat errant — que faire ?</div>
+                    <div class="bubble from-bot">Merci ! Pouvez-vous indiquer la localisation et partager une photo ? Je
+                        peux créer un signalement pour l'équipe.</div>
+                </div>
+
+                <form class="chat-input" id="demoForm" onsubmit="return false"
+                    aria-label="Envoyer un message de démonstration">
+                    <input id="demoInput" type="text" placeholder="Écrire un message..."
+                        aria-label="Message de démonstration">
+                    <button id="sendBtn" class="btn-primary" aria-label="Envoyer">Envoyer</button>
+                </form>
+            </aside>
+        </section>
+
+        <section id="pricing" aria-labelledby="pricing-title">
+            <h2 id="pricing-title" style="margin:8px 0 12px">Tarifs simples & adaptés</h2>
+            <div class="cards" role="list">
+                <div class="card" role="listitem" aria-label="Offre découverte">
+                    <div style="font-weight:700">Découverte</div>
+                    <div class="price">Gratuit</div>
+                    <div style="color:var(--muted);margin-top:8px">Jusqu'à 100 conversations / mois — fonctionnalités de
+                        base.</div>
+                    <ul style="margin-top:10px;color:var(--muted);padding-left:18px">
+                        <li>FAQ automatique</li>
+                        <li>Signalement basique</li>
+                        <li>Support email</li>
+                    </ul>
+                </div>
+                <div class="card" role="listitem" aria-label="Offre standard">
+                    <div style="font-weight:700">Standard</div>
+                    <div class="price">€49 / mois</div>
+                    <div style="color:var(--muted);margin-top:8px">Idéal pour petites associations — intégration CRM
+                        simple.</div>
+                    <ul style="margin-top:10px;color:var(--muted);padding-left:18px">
+                        <li>Conversations illimitées</li>
+                        <li>Formulaires avancés</li>
+                        <li>Handover vers bénévoles</li>
+                    </ul>
+                </div>
+                <div class="card" role="listitem" aria-label="Offre pro">
+                    <div style="font-weight:700">Pro</div>
+                    <div class="price">Sur devis</div>
+                    <div style="color:var(--muted);margin-top:8px">Hébergement en UE, SLA, intégrations sur mesure.
+                    </div>
+                    <ul style="margin-top:10px;color:var(--muted);padding-left:18px">
+                        <li>RGPD & hébergement UE</li>
+                        <li>Intégrations CRM / Mail</li>
+                        <li>Onboarding & formation</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" aria-labelledby="faq-title">
+            <h2 id="faq-title">FAQ</h2>
+            <div class="faq" role="list">
+                <div class="faq-item" role="listitem">
+                    <div class="faq-question" tabindex="0">
+                        <div><strong>Le chatbot remplace-t-il les bénévoles ?</strong></div>
+                        <div aria-hidden="true">+</div>
+                    </div>
+                    <div class="faq-answer">Le chatbot automatise les tâches répétitives et trie les demandes ; pour les
+                        cas sensibles (urgence, santé) il transfère vers des bénévoles humains.</div>
+                </div>
+                <div class="faq-item" role="listitem">
+                    <div class="faq-question" tabindex="0">
+                        <div><strong>Est-ce conforme RGPD ?</strong></div>
+                        <div aria-hidden="true">+</div>
+                    </div>
+                    <div class="faq-answer">Oui — options d'hébergement en France/UE, export et suppression des données
+                        à la demande, consentement explicite pour la collecte.</div>
+                </div>
+                <div class="faq-item" role="listitem">
+                    <div class="faq-question" tabindex="0">
+                        <div><strong>Quelles intégrations sont possibles ?</strong></div>
+                        <div aria-hidden="true">+</div>
+                    </div>
+                    <div class="faq-answer">CRM (HubSpot, Salesforce, Odoo), outils de paiement, Google Sheets, Zapier /
+                        Make pour workflows personnalisés.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" aria-labelledby="contact-title" style="margin-top:18px">
+            <h2 id="contact-title">Contactez-nous / Essai gratuit</h2>
+            <form id="contactForm" class="hero-card" aria-label="Formulaire de contact">
+                <label for="org" style="display:block;font-weight:700">Nom de l'association</label>
+                <input id="org" name="org" type="text" required aria-required="true"
+                    placeholder="Ex : Refuge Les Minous"
+                    style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+
+                <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+                    <div style="flex:1;min-width:180px">
+                        <label for="email" style="font-weight:700;display:block">Email</label>
+                        <input id="email" name="email" type="email" required placeholder="contact@exemple.org"
+                            style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+                    </div>
+                    <div style="flex:1;min-width:160px">
+                        <label for="size" style="font-weight:700;display:block">Taille (volontaires)</label>
+                        <select id="size" name="size"
+                            style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+                            <option value="small">1-10</option>
+                            <option value="medium">11-50</option>
+                            <option value="large">50+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label for="message" style="display:block;font-weight:700;margin-top:12px">Message / Besoin</label>
+                <textarea id="message" name="message" rows="4"
+                    placeholder="Décris brièvement ce que tu veux automatiser..."
+                    style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit"></textarea>
+
+                <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+                    <button class="btn btn-primary" type="submit">Demander un essai</button>
+                    <div class="small" style="color:var(--muted)">Ou écris-nous à <a href="mailto:contact@chataid.org"
+                            style="color:var(--accent-100)">contact@chataid.org</a></div>
+                </div>
+
+                <div id="formFeedback" style="margin-top:10px;display:none"></div>
+            </form>
+        </section>
+
+        <footer>
+            <div class="small">© <strong>ChatAid</strong> — Solution pensée pour associations. Hébergement EU
+                disponible.</div>
+            <div class="small">Made with ❤️ · <a href="#privacy" style="color:var(--muted)">Politique de
+                    confidentialité</a></div>
+        </footer>
+    </div>
+
+    <script>
+        // Simple demo chat behavior
+        (function () {
+            const chatWindow = document.getElementById('chatWindow');
+            const demoInput = document.getElementById('demoInput');
+            const sendBtn = document.getElementById('sendBtn');
+
+            function appendMessage(text, cls) {
+                const el = document.createElement('div');
+                el.className = 'bubble ' + cls;
+                el.textContent = text;
+                chatWindow.appendChild(el);
+                chatWindow.scrollTop = chatWindow.scrollHeight + 100;
+            }
+
+            sendBtn.addEventListener('click', () => {
+                const txt = demoInput.value.trim();
+                if (!txt) return;
+                appendMessage(txt, 'from-user');
+                demoInput.value = '';
+                // Simulate bot response
+                setTimeout(() => {
+                    let reply = "Merci — j'ai créé un signalement. Un bénévole vous contactera sous 24h. Pour urgence, appelez le numéro local.";
+                    if (/\b(don|donation|payer|paiement)\b/i.test(txt)) reply = "Pour effectuer un don en ligne, rends-toi sur notre page de dons ou indique le montant ici. Nous t'indiquerons les options de paiement.";
+                    appendMessage(reply, 'from-bot');
+                }, 700 + Math.random() * 600);
+            });
+
+            demoInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { sendBtn.click(); e.preventDefault(); }
+            });
+        })();
+
+        // FAQ accordion
+        (function () {
+            const items = document.querySelectorAll('.faq-item');
+            items.forEach(item => {
+                const q = item.querySelector('.faq-question');
+                const a = item.querySelector('.faq-answer');
+                q.addEventListener('click', () => toggle(item, a));
+                q.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(item, a); } });
+                function toggle(item, a) {
+                    const open = a.style.display === 'block';
+                    // close others
+                    items.forEach(i => { const aa = i.querySelector('.faq-answer'); if (aa && aa !== a) aa.style.display = 'none'; });
+                    a.style.display = open ? 'none' : 'block';
+                }
+            });
+        })();
+
+        // Contact form simple validation + fake submit (replace with real API)
+        (function () {
+            const form = document.getElementById('contactForm');
+            const feedback = document.getElementById('formFeedback');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const org = form.org.value.trim();
+                const email = form.email.value.trim();
+                if (!org || !email) {
+                    feedback.style.display = 'block';
+                    feedback.style.color = 'var(--danger)';
+                    feedback.textContent = 'Merci de renseigner au minimum le nom de l\'association et un email.';
+                    return;
+                }
+                // simulate network
+                feedback.style.display = 'block';
+                feedback.style.color = 'var(--muted)';
+                feedback.textContent = 'Envoi en cours…';
+                setTimeout(() => {
+                    feedback.style.color = 'var(--success)';
+                    feedback.textContent = 'Merci — votre demande a été reçue. Nous vous contacterons sous 48h.';
+                    form.reset();
+                }, 900);
+            });
+        })();
+
+        // Small accessibility: focus first interactive on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const start = document.getElementById('startTrial');
+            if (start) start.focus();
+        });
+    </script>
+</body>
+
+</html>
