@@ -2,9 +2,10 @@
   "name": "chatbot-openai-llm",
   "version": "1.0.0",
   "description": "Small chat frontend + backend using OpenAI chat completions; modal to set API key in .env",
-  "main": "server.js",
+  "main": "src/server/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node src/server/server.js",
+    "dev": "node src/server/server.js"
   },
   "keywords": [],
   "author": "",

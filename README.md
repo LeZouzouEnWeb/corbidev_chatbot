@@ -2,6 +2,36 @@
 
 Tiny example that sets up an Express server and a static frontend to chat with an OpenAI chat model.
 
+## Structure du projet
+
+```
+/
+├─ public/                    # Fichiers statiques (HTML)
+│  ├─ index.html             # Interface chatbot
+│  ├─ landing-page.html      # Page de présentation
+│  └─ assets/
+│      └─ images/
+├─ src/
+│  ├─ css/                   # Styles
+│  │   └─ style-chatbot.css
+│  ├─ js/                    # Scripts frontend
+│  │   ├─ script-chatbot.js
+│  │   └─ utils/
+│  ├─ server/                # Backend Node.js
+│  │   └─ server.js
+│  └─ knowledge/             # Base de connaissance RAG
+│      ├─ maine-coon.md
+│      └─ RAG/
+│          ├─ rag-01-base-de-connaissance.md
+│          ├─ rag-02-architect-design.md
+│          ├─ rag-03-UI_UX_en-taiwling-css-et-chadcn.md
+│          ├─ rag-04-expert-fullstack-html-CSS-et-JS.md
+│          └─ rag-mutualise.md
+├─ package.json
+├─ .env                      # Configuration (non versionné)
+└─ README.md
+```
+
 ## Contexte du projet
 Ce dépôt est un petit projet de démonstration destiné à montrer comment intégrer un modèle de chat OpenAI dans une application web simple.
 L'objectif principal est pédagogique : fournir une base légère (frontend statique + serveur Express) pour expérimenter des flux de conversation, stocker une clé d'API pour le développement local, et montrer comment intégrer une petite base de connaissance (RAG) pour répondre aux questions.
@@ -9,9 +39,9 @@ L'objectif principal est pédagogique : fournir une base légère (frontend stat
 Le projet est orienté formation/atelier — il n'est pas sécurisé pour la production (pas d'authentification, pas de rate-limiting, clés stockées en local pour faciliter les essais).
 
 ## Features
-- Frontend chat interface (in `index.html`) using an OpenAI chat model
+- Frontend chat interface (in `public/index.html`) using an OpenAI chat model
 - Modal for saving the API key to `.env` on the server (POST /set-key)
-- Chat endpoint (POST /chat) that uses `OPENAI_API_KEY` from `.env` to call OpenAI
+- Chat endpoint (POST /chat) that uses `OPENROUTER_API_KEY` from `.env` to call OpenRouter API
 
 ## Run locally
 1) Ensure Node.js installed.
@@ -29,14 +59,16 @@ npm start
 
 4) Open the app: http://localhost:3000
 
+Le serveur sert les fichiers statiques depuis le dossier `public/` et expose les endpoints API.
+
 ## Notes & Security
 - Storing API keys in a file (like `.env`) is a convenience for local development; in production prefer secure vaults.
 - `.env` is added to .gitignore.
-- The server exposes a simple `POST /chat` that forwards messages to OpenAI; rate limiting/authentication is not implemented in this minimal example.
+- The server exposes a simple `POST /chat` that forwards messages to OpenRouter; rate limiting/authentication is not implemented in this minimal example.
 
 ## Config
-  - `OPENAI_API_KEY` - your OpenAI API key (sk-...)
-  - `OPENAI_MODEL` - optional; defaults to `gpt-4o-mini` (used if the client doesn't send a model)
+  - `OPENROUTER_API_KEY` - your OpenRouter API key (sk-or-...)
+  - `OPENROUTER_MODEL` - optional; defaults to `x-ai/grok-4.1-fast:free`
   - `HISTORY_MAX_MESSAGES` - maximum number of previous messages forwarded to the model (default: 24)
   - `MAX_RESPONSE_CHARS` - max allowed characters in assistant replies before truncation (default: 1000)
   - `PORT` - port where the server listens (default: 3000)
@@ -46,78 +78,11 @@ npm start
   - `DEFAULT_REMEMBER_HISTORY` - default checked state for remember-history (true/false; default false)
   - `MAX_TOKENS` - tokens used for the completion API call (default 512)
 
-You can also choose the model in the web UI: in the "Clé OpenAI" modal, select a model and save it — it will persist to `.env` and be used as the server default. When chatting, the selected model is sent with each request so you can temporarily override the default for a session.
- - Note: Saving your API key and saving the model are separate actions. Click **Enregistrer la clé** to store the key and **Enregistrer le modèle** to persist your chosen model.
-
-Conversation context (mémoire)
-- The frontend now stores conversation history and sends it with each message, so the model has access to prior exchanges.
-- You can clear history using the 🧹 button in the header.
-- Toggle "Se souvenir" to persist the conversation into `localStorage` across page reloads.
-  - You can change the model used by the app via the chat UI. In the "Clé OpenAI" modal, select a model and save it — this will set `OPENAI_MODEL` on the server.
-
-Optional config
-- `HISTORY_MAX_MESSAGES` : set this environment variable on the server to limit how many prior messages will be accepted and forwarded to the OpenAI API (default 24).
- - `HISTORY_MAX_MESSAGES` : set this environment variable on the server to limit how many prior messages will be accepted and forwarded to the OpenAI API (default 24).
- - `MAX_RESPONSE_CHARS` : maximum characters allowed in assistant replies, will truncate responses if larger (default 1000). Set this value in your `.env` to change the limit.
-
-RESOURCE_SITES & recommandations internet
------------------------------------------
-- Vous pouvez définir `RESOURCE_SITES` dans `.env` comme une liste de paires nom|url séparées par `;` pour personnaliser les sites proposés en cas d'absence d'information :
-  - Exemple: `RESOURCE_SITES=Wikipédia (FR)|https://fr.wikipedia.org;Royal Canin (FR)|https://www.royalcanin.com/fr`
-- Par défaut, le serveur propose Wikipédia (FR), Royal Canin et une recherche Google pour un vétérinaire local.
-- Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante).
- - Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante). Ces liens seront affichés sous forme cliquable dans la discussion.
- - Si le message contient des mots-clés comme `Maine Coon` ou `chat`, le serveur propose automatiquement des liens contextuels (ex. la page Wikipédia correspondante). Ces liens seront affichés sous forme cliquable dans la discussion.
-
-Styling et rendu (Markdown + couleurs)
------------------------------------
-- L'application accepte des réponses en Markdown (titres, listes, liens) et un tag spécial `[color=COLOR]Texte[/color]` pour colorer des fragments.
-- Les messages de fallback sont désormais stylisés : titres soulignés en couleur, options en gras et ressources listées en Markdown cliquable.
-
-Exemple de message stylisé envoyé par le serveur pour les cas hors-base :
-
-```md
-[color=#1E90FF]**Information hors-base**[/color]
-
-Je suis spécialisé(e) sur les chats (Maine Coon) et je ne trouve pas d'information précise sur ce point dans la base. 😊
-
-Souhaitez-vous que je :
-- **Proposer** une réponse générale (hors-base, non vérifiée)
-- **Rechercher** des sujets proches dans la base
-- **Poser** une question pour préciser votre besoin
-
-[color=#16A34A]**Ressources utiles :**[/color]
-- [Wikipédia (FR)](https://fr.wikipedia.org)
-- [Royal Canin (FR)](https://www.royalcanin.com/fr)
-```
-
-Note: `renderAssistantMarkdown()` du front-end convertit les tags `[color=...]` en `style="color:..."` et `marked` affiche le Markdown ; `DOMPurify` nettoie le HTML rendu.
-
-Comportement quand l'information n'est pas dans la base (RAG)
-------------------------------------------------------------
-- Le chatbot évite maintenant les réponses trop abruptes comme "Information non disponible dans la base.".
-- Si une question n'est pas couverte par la base de connaissance, le chatbot :
-  - indique poliment qu'il ne trouve pas d'information dans la base ;
-  - propose des choix utiles (ex. : donner une réponse générale non vérifiée, proposer des sujets proches contenus dans la base, ou poser une question de clarification pour mieux cibler la recherche) ;
-  - marque explicitement toute information fournise comme "hors base" (approximative) si nécessaire.
-
-Gestion des sujets hors périmètre (ex. chien vs chat)
-----------------------------------------------------
-- Si l'utilisateur pose une question sur un sujet en dehors de la base (par ex. il parle d'un chien alors que la base porte sur les chats — Maine Coon), le chatbot :
-  - le précisera clairement (ex. « ma base se concentre sur les Maine Coon ») ;
-  - proposera des actions (réponse hors-base, recherche de sujet proche, question de clarification) ;
-  - proposera des ressources externes cliquables (définies via `RESOURCE_SITES` / `.env`) pour approfondir.
-
-  Note technique : lorsqu’un message est explicitement hors périmètre (par ex. mention de “chien”), le serveur peut renvoyer directement un message concis et structuré sans faire appel au modèle, afin d’éviter les réponses confuses ou hors sujet.
-
-Exemple: à la place de "Information non disponible dans la base.", l'assistant répondra quelque chose comme :
-> "Je ne trouve pas d'information précise sur ce point dans la base de connaissance. Souhaitez-vous que je propose des éléments généraux (hors base) ou que je vous pose une question pour préciser votre besoin ? 😊"
-
 Example `.env` file (dev/test only):
 
 ```
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=x-ai/grok-4.1-fast:free
 HISTORY_MAX_MESSAGES=24
 MAX_RESPONSE_CHARS=1000
 PORT=3000
@@ -128,42 +93,52 @@ DEFAULT_REMEMBER_HISTORY=false
 MAX_TOKENS=512
 ```
 
-You can update the server-side values at runtime using the API (if available):
-- POST `/set-key` with body { key } to write the `OPENAI_API_KEY` to `.env` and update process.env
-- POST `/set-model` with body { model } to update `OPENAI_MODEL` in `.env` and update process.env
-- POST `/set-config` with body { key, value } to update `MAX_RESPONSE_CHARS` and `HISTORY_MAX_MESSAGES` at runtime
+## Architecture
 
-Note: Most other defaults are read from `.env` on startup including `DEFAULT_*` flags and `MAX_TOKENS`.
+### Frontend (`public/`)
+- **index.html** : Interface principale du chatbot avec modal de configuration
+- **landing-page.html** : Page de présentation du projet ChatAid
+- Les fichiers HTML chargent les ressources depuis `../src/css/` et `../src/js/`
 
-## How it works
-- The frontend calls `/set-key` to write the `.env` file.
- - The server updates `process.env.OPENAI_API_KEY` after `/set-key` so new keys are available right away without restart.
+### Backend (`src/server/`)
+- **server.js** : Serveur Express qui :
+  - Sert les fichiers statiques depuis `public/`
+  - Expose les endpoints API (`/chat`, `/set-key`, `/config`, etc.)
+  - Charge la base de connaissance depuis `src/knowledge/`
+  - Gère la configuration via `.env` à la racine du projet
 
-To apply changes dynamically, you may restart the server or extend the server to reload env values from disk on each request (fast and minimal change already done in server by reading process.env only at startup - you can adapt to re-read a newly written `.env` if needed).
+### Styles (`src/css/`)
+- **style-chatbot.css** : Styles pour le widget de chat (glassmorphism, animations, bulles)
+
+### Scripts (`src/js/`)
+- **script-chatbot.js** : Logique frontend du chatbot (gestion des messages, localStorage, rendering Markdown)
+
+### Base de connaissance (`src/knowledge/`)
+- Fichiers Markdown utilisés pour le RAG (Retrieval-Augmented Generation)
+- Chargés par le serveur pour enrichir les réponses de l'assistant
+
+## Bonnes pratiques appliquées
+
+✅ Séparation des responsabilités : frontend (public), backend (src/server), assets (src/css, src/js)
+✅ Configuration centralisée via `.env` à la racine
+✅ Structure modulaire permettant l'ajout de composants (src/components, src/js/utils)
+✅ Chemins relatifs cohérents entre HTML et ressources
+✅ Scripts npm configurés pour pointer vers le bon chemin du serveur
 
 ## Tâches (To-do / Done)
-Ci-dessous la liste des tâches du projet et leur état actuel. Les cases cochées ✅ indiquent les éléments déjà implémentés.
 
 - [x] Initialiser le projet Node.js (`package.json`) et installer les dépendances
 - [x] Mettre en place un serveur Express minimal (`server.js`) avec des endpoints pour configurer la clé et le modèle
 - [x] Créer une interface front-end simple (`index.html`) utilisant Tailwind, Lucide pour les icônes, et `marked`/`DOMPurify` pour afficher la sortie Markdown
-- [x] Endpoint `POST /set-key` pour écrire la clé OpenAI dans `.env` et mettre à jour `process.env` en mémoire
+- [x] Endpoint `POST /set-key` pour écrire la clé OpenRouter dans `.env` et mettre à jour `process.env` en mémoire
 - [x] Endpoint `POST /set-model` pour persister un modèle par défaut dans `.env`
 - [x] Endpoint `POST /set-config` pour configurer des paramètres comme `MAX_RESPONSE_CHARS`
-- [x] Endpoint `POST /chat` pour envoyer les messages au point d'API OpenAI (proxy)
+- [x] Endpoint `POST /chat` pour envoyer les messages au point d'API OpenRouter (proxy)
 - [x] Ajouter une petite base de connaissance (RAG) optionnelle dans `knowledge/maine-coon.md` et endpoint `GET /kb` pour l'inspecter
 - [x] Mémorisation du contexte (localStorage) et affichage des messages dans l'UI
 - [x] Sélecteur de modèle dans l'UI et gestion des préférences côté client
+- [x] Refactorisation de l'architecture des fichiers (public/, src/)
 - [ ] Ajouter une authentification utilisateur / gestion des sessions (non implémenté)
 - [ ] Sécuriser la persistance des clés (ne PAS stocker en clair en production)
 - [ ] Ajouter un rate-limiting et des protections anti-abuse côté serveur
 - [ ] Ajouter des tests unitaires et CI
-
-## Où j'ai ajouté des commentaires dans le code
-J'ai ajouté des commentaires explicatifs pour faciliter la prise en main et la lecture du code :
-- `server.js` : en-tête de fichier, utilitaires (`setEnv`, `getMaxResponseChars`), et commentaires au-dessus de chaque endpoint pour expliquer leurs inputs et outputs.
-- `index.html` : commentaires sur la structure de l'UI, DOM elements importants, gestion du localStorage, et sur la fonction `renderAssistantMarkdown()` qui convertit les balises `[color=]` en styles inline puis rend le Markdown en HTML sécurisé.
-
-Si vous souhaitez que j'ajoute d'autres sections (par ex. guide de déploiement, architecture, tests), dites-moi lesquelles et je les ajouterai.
-
-# corbidev_chatbot
