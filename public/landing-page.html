@@ -87,15 +87,12 @@
                         <div style="width:10px;height:10px;border-radius:50%;background:#16a34a"></div>
                         <div style="font-weight:700">Démo Chat</div>
                     </div>
-                    <div style="font-size:13px;color:var(--muted)">Interaction simulée</div>
+                    <div id="demoChatStatus" style="font-size:13px;color:var(--muted)">En ligne</div>
                 </div>
 
                 <div class="chat-window" id="chatWindow" aria-live="polite" aria-atomic="false">
-                    <div class="bubble from-bot" id="b1">Bonjour 👋 Je suis ChatAid — comment puis-je aider votre
-                        association aujourd'hui ?</div>
-                    <div class="bubble from-user">Nous avons trouvé un chat errant — que faire ?</div>
-                    <div class="bubble from-bot">Merci ! Pouvez-vous indiquer la localisation et partager une photo ? Je
-                        peux créer un signalement pour l'équipe.</div>
+                    <div class="bubble from-bot">Bonjour 👋 Je suis ChatAid — spécialisé dans le Refuge des Animaux Oubliés. Comment puis-je
+                        vous aider aujourd'hui ?</div>
                 </div>
 
                 <form class="chat-input" id="demoForm" onsubmit="return false"
@@ -251,7 +248,7 @@
                         En ligne
                     </div>
                 </div>
-                
+
                 <!-- Ligne 2: Options et boutons (alignés à droite) -->
                 <div class="flex items-center justify-end gap-2 relative">
                     <button id="settingsBtn"
@@ -336,11 +333,11 @@
     <div id="keyModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
         <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-white/50">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold">Clé OpenAI</h2>
+                <h2 class="text-lg font-semibold">Clé OpenRouter</h2>
                 <button id="closeKeyModal" class="text-gray-500">✖</button>
             </div>
             <div class="space-y-3">
-                <p class="text-sm text-gray-600">Entrez votre clé OpenAI (ex: sk-... ). Elle sera enregistrée localement
+                <p class="text-sm text-gray-600">Entrez votre clé OpenRouter (ex: sk-... ). Elle sera enregistrée localement
                     dans <code>.env</code>.</p>
                 <input id="apiKeyInput" class="w-full border px-3 py-2 rounded" placeholder="sk-xxx..." />
                 <div class="pt-2">
@@ -368,36 +365,128 @@
     <script src="../src/js/script-chatbot.js"></script>
 
     <script>
-        // Simple demo chat behavior
+            // Functional demo chat with RAG integration for refuge-animaux-errants.md
         (function () {
             const chatWindow = document.getElementById('chatWindow');
             const demoInput = document.getElementById('demoInput');
             const sendBtn = document.getElementById('demoSendBtn');
+            const demoStatus = document.getElementById('demoChatStatus');
+            let demoHistory = [];
 
             function appendMessage(text, cls) {
                 const el = document.createElement('div');
                 el.className = 'bubble ' + cls;
-                el.textContent = text;
+                // For bot messages, render as HTML if markdown-like content is present
+                if (cls === 'from-bot' && (text.includes('**') || text.includes('*') || text.includes('\n'))) {
+                    try {
+                        const html = marked.parse(text);
+                        const sanitized = DOMPurify.sanitize(html);
+                        el.innerHTML = sanitized;
+                    } catch (e) {
+                        el.textContent = text;
+                    }
+                } else {
+                    el.textContent = text;
+                }
                 chatWindow.appendChild(el);
                 chatWindow.scrollTop = chatWindow.scrollHeight + 100;
             }
 
-            sendBtn.addEventListener('click', () => {
+            function showDemoLoading() {
+                const loader = document.createElement('div');
+                loader.className = 'bubble from-bot';
+                loader.id = 'demoLoader';
+                loader.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+                chatWindow.appendChild(loader);
+                chatWindow.scrollTop = chatWindow.scrollHeight + 100;
+                demoInput.setAttribute('disabled', 'disabled');
+                sendBtn.setAttribute('disabled', 'disabled');
+            }
+
+            function hideDemoLoading() {
+                const loader = document.getElementById('demoLoader');
+                if (loader) loader.remove();
+                demoInput.removeAttribute('disabled');
+                sendBtn.removeAttribute('disabled');
+            }
+
+            async function sendDemoMessage() {
                 const txt = demoInput.value.trim();
                 if (!txt) return;
+
                 appendMessage(txt, 'from-user');
+                demoHistory.push({ role: 'user', content: txt });
                 demoInput.value = '';
-                // Simulate bot response
-                setTimeout(() => {
-                    let reply = "Merci — j'ai créé un signalement. Un bénévole vous contactera sous 24h. Pour urgence, appelez le numéro local.";
-                    if (/\b(don|donation|payer|paiement)\b/i.test(txt)) reply = "Pour effectuer un don en ligne, rends-toi sur notre page de dons ou indique le montant ici. Nous t'indiquerons les options de paiement.";
+                showDemoLoading();
+
+                try {
+                    // Call the chat API with knowledge base for refuge-animaux-errants
+                    const res = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: txt,
+                            model: 'gpt-4o-mini',
+                            history: demoHistory.slice(-10), // Keep last 10 messages
+                            useKnowledge: true, // Use RAG knowledge base
+                            knowledgeFile: 'refuge-animaux-errants.md', // Specify the refuge knowledge
+                            shortResponse: false,
+                            stylizeResponse: true
+                        })
+                    });
+                    const json = await res.json();
+                    hideDemoLoading();
+
+                    if (!json.ok) {
+                        const errorMsg = json.error || 'Erreur de connexion';
+                        appendMessage('Désolé, une erreur est survenue : ' + errorMsg, 'from-bot');
+                        demoStatus.textContent = 'Erreur';
+                        demoStatus.style.color = 'var(--danger)';
+                        return;
+                    }
+
+                    const reply = json.reply || 'Aucune réponse';
                     appendMessage(reply, 'from-bot');
-                }, 700 + Math.random() * 600);
-            });
+                    demoHistory.push({ role: 'assistant', content: reply });
+
+                    // Trim history to last 10 messages
+                    if (demoHistory.length > 10) {
+                        demoHistory = demoHistory.slice(-10);
+                    }
+                } catch (err) {
+                    hideDemoLoading();
+                    appendMessage('Erreur de connexion : ' + err.message, 'from-bot');
+                    demoStatus.textContent = 'Hors ligne';
+                    demoStatus.style.color = 'var(--danger)';
+                }
+            }
+
+            sendBtn.addEventListener('click', sendDemoMessage);
 
             demoInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { sendBtn.click(); e.preventDefault(); }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendDemoMessage();
+                }
             });
+
+            // Check server status on load
+            (async function checkDemoStatus() {
+                try {
+                    const r = await fetch('/config');
+                    const j = await r.json();
+                    if (j.keySet) {
+                        demoStatus.textContent = 'En ligne';
+                        demoStatus.style.color = 'var(--success)';
+                    } else {
+                        demoStatus.textContent = 'Clé API manquante';
+                        demoStatus.style.color = 'var(--warning)';
+                    }
+                } catch (err) {
+                    demoStatus.textContent = 'Hors ligne';
+                    demoStatus.style.color = 'var(--danger)';
+                }
+            })();
         })();
 
         // FAQ accordion

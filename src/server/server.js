@@ -36,7 +36,7 @@ function boolEnv(name, defaultValue) {
   return v === '1' || v.toLowerCase() === 'true';
 }
 
-// Number of tokens to request from the OpenAI completions endpoint
+// Number of tokens to request from the OpenRouter completions endpoint
 function getMaxTokens() {
   return parseInt(process.env.MAX_TOKENS || '512', 10);
 }
@@ -111,14 +111,33 @@ function buildFallbackMessage(userMessage, stylize = true) {
 // Optional RAG (retrieval-augmented generation) knowledge base. This file is used
 // as a system message to the model to bias the assistant's answers when `useKnowledge` is true.
 let knowledgeBase = null;
-try {
-  const kbPath = path.join(__dirname, '..', 'knowledge', 'maine-coon.md');
-  if (fs.existsSync(kbPath)) {
-    knowledgeBase = fs.readFileSync(kbPath, 'utf-8');
-    console.log('Knowledge base loaded: Maine Coon');
+const knowledgeBases = {};
+
+// Helper function to load a knowledge file by name
+function loadKnowledgeFile(filename) {
+  if (knowledgeBases[filename]) {
+    return knowledgeBases[filename];
   }
+
+  try {
+    const kbPath = path.join(__dirname, '..', '..', 'public', 'src', 'knowledge', filename);
+    if (fs.existsSync(kbPath)) {
+      const content = fs.readFileSync(kbPath, 'utf-8');
+      knowledgeBases[filename] = content;
+      console.log(`Knowledge base loaded: ${filename}`);
+      return content;
+    }
+  } catch (err) {
+    console.warn(`Could not load knowledge base ${filename}:`, err);
+  }
+  return null;
+}
+
+// Load default knowledge base (Maine Coon)
+try {
+  knowledgeBase = loadKnowledgeFile('maine-coon.md');
 } catch (err) {
-  console.warn('Could not load knowledge base', err);
+  console.warn('Could not load default knowledge base', err);
 }
 
 // Middlewares
@@ -133,8 +152,8 @@ function getMaxResponseChars() {
   return parseInt(process.env.MAX_RESPONSE_CHARS || '1000', 10);
 }
 
-// Helper to set env entries safely (only OPENAI_API_KEY for now)
-// Persist a key/value into `.env` safely. Currently used for OPENAI_API_KEY and OPENAI_MODEL.
+// Helper to set env entries safely (only OPENROUTER_API_KEY for now)
+// Persist a key/value into `.env` safely. Currently used for OPENROUTER_API_KEY and OPENROUTER_MODEL.
 // This is intentionally minimal: it overwrites or appends a single value in `.env`.
 // Security note: Writing secrets to `.env` is only suitable for local development.
 function setEnv(key, value) {
@@ -160,7 +179,7 @@ function setEnv(key, value) {
 
 // POST /set-key
 // Body: { key: string }
-// Persists the provided OpenAI API key to `.env` and updates process.env so the server
+// Persists the provided OpenRouter API key to `.env` and updates process.env so the server
 // can use it without a restart. Returns { ok: true } on success.
 app.post('/set-key', (req, res) => {
   const { key } = req.body;
@@ -233,7 +252,7 @@ app.post('/set-config', (req, res) => {
   res.status(400).json({ ok: false, error: 'Unhandled key' });
 });
 
-// Chat endpoint - sends message to OpenAI (chat completions)
+// Chat endpoint - sends message to OpenRouter (chat completions)
 // POST /chat
 // Body: {
 //   message: string,
@@ -243,7 +262,7 @@ app.post('/set-config', (req, res) => {
 //   shortResponse?: boolean,
 //   stylizeResponse?: boolean
 // }
-// Forwards the message (with bounded history) to OpenAI's Chat Completions API
+// Forwards the message (with bounded history) to OpenRouter's Chat Completions API
 // and returns the assistant reply. The server enforces some system prompts and length limits.
 app.post('/chat', async (req, res) => {
   const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
@@ -253,8 +272,18 @@ app.post('/chat', async (req, res) => {
   const envDefaultUseKnowledge = boolEnv('DEFAULT_USE_KNOWLEDGE', true);
   const envDefaultStylize = boolEnv('DEFAULT_STYLIZE_RESPONSE', true);
   const envDefaultShort = boolEnv('DEFAULT_SHORT_RESPONSE', false);
-  const { message, history = [], useKnowledge = envDefaultUseKnowledge, shortResponse = envDefaultShort, stylizeResponse = envDefaultStylize } = req.body;
+  const { message, history = [], useKnowledge = envDefaultUseKnowledge, shortResponse = envDefaultShort, stylizeResponse = envDefaultStylize, knowledgeFile } = req.body;
   if (!message) return res.status(400).json({ ok: false, error: 'No message provided' });
+
+  // Select knowledge base: if knowledgeFile is specified, load it; otherwise use default
+  let selectedKnowledge = knowledgeBase;
+  if (knowledgeFile && useKnowledge) {
+    selectedKnowledge = loadKnowledgeFile(knowledgeFile);
+    if (!selectedKnowledge) {
+      console.warn(`Requested knowledge file ${knowledgeFile} not found, falling back to default`);
+      selectedKnowledge = knowledgeBase;
+    }
+  }
 
   // Sanitize & trim history: ensure only well-formed objects pass through
   let sanitized = [];
@@ -266,13 +295,24 @@ app.post('/chat', async (req, res) => {
 
   // Quick check: if the user asks about dogs but our KB is about cats, return a concise fallback
   const userMention = detectAnimalFromMessage(message);
-  if (userMention === 'dog' && useKnowledge && knowledgeBase && knowledgeBase.toLowerCase().includes('maine coon')) {
+  if (userMention === 'dog' && useKnowledge && selectedKnowledge && selectedKnowledge.toLowerCase().includes('maine coon')) {
     const fallback = buildFallbackMessage(message, stylizeResponse);
     return res.json({ ok: true, reply: fallback, data: null });
   }
 
   // System message(s): provide constraints, language, and maximum characters
   const messages = [];
+
+  // Determine the knowledge base context based on the selected file
+  let kbContext = 'les chats (Maine Coon)';
+  if (knowledgeFile) {
+    if (knowledgeFile.includes('refuge-animaux-errants')) {
+      kbContext = 'le Refuge des Animaux Oubliés (animaux errants et adoption)';
+    } else if (knowledgeFile.includes('association-chat-and-co')) {
+      kbContext = "l'association Chat and Co";
+    }
+  }
+
   // System constraints: prefer helpful guidance rather than blunt refusals
   // - If the exact info isn't in the knowledge base, be polite and helpful:
   //   1) explain that the base doesn't contain the requested information;
@@ -280,18 +320,19 @@ app.post('/chat', async (req, res) => {
   //      or give a succinct general answer marked as "hors base" (non vérifiée);
   //   3) never use a blunt single-line "Information non disponible dans la base." as the only reply;
   // - Always respond in French, add at least one emoji, and keep length within MAX_RESPONSE_CHARS.
-  const systemConstraints = `Tu es un assistant en français. RÉPONDS DE FAÇON CONCISE (3 courts paragraphes max). Si l'information demandée n'est pas trouvée dans la base de connaissance fournie :
+  const systemConstraints = `Tu es un assistant en français spécialisé sur ${kbContext}. RÉPONDS DE FAÇON CONCISE (3 courts paragraphes max). Si l'information demandée n'est pas trouvée dans la base de connaissance fournie :
   1) Indique poliment que la base ne contient pas cette information.
   2) Propose au moins une action utile (ex : demander une clarification, proposer une question alternative, ou donner une réponse générale clairement marquée comme "hors base"/approximative).
   3) Si possible, propose du contenu connexe tiré de la base et demande si l'utilisateur souhaite approfondir.
-  Réponse maximum ${getMaxResponseChars()} caractères. Ajoute au moins un emoji pertinent. Sépare chaque paragraphe par une ligne vide. Ne mélange pas les sujets : si l'utilisateur parle de "chien(s)", rappelle que ta base est centrée sur les chats (Maine Coon) et demande si l'utilisateur souhaite une réponse hors-base ou des ressources externes.`;
+  Réponse maximum ${getMaxResponseChars()} caractères. Ajoute au moins un emoji pertinent. Sépare chaque paragraphe par une ligne vide.`;
   messages.push({ role: 'system', content: systemConstraints });
   if (stylizeResponse) {
     messages.push({ role: 'system', content: "Utilise Markdown pour la mise en forme, et ajoute des emojis quand c'est pertinent. Pour les couleurs, le front-end accepte un tag [color=COLOR]Texte[/color] (COLOR est un nom CSS ou hex)." });
   }
   // Optionally prepend the knowledge base as an additional system message to bias answers
-  if (useKnowledge && knowledgeBase) {
-    messages.push({ role: 'system', content: `Base de connaissance - Les Maine Coons:\n\n${knowledgeBase}` });
+  if (useKnowledge && selectedKnowledge) {
+    const kbTitle = knowledgeFile ? knowledgeFile.replace('.md', '').replace(/-/g, ' ') : 'Les Maine Coons';
+    messages.push({ role: 'system', content: `Base de connaissance - ${kbTitle}:\n\n${selectedKnowledge}` });
   }
   // include any sanitized system or other messages from history
   messages.push(...sanitized);
@@ -316,14 +357,14 @@ app.post('/chat', async (req, res) => {
 
     if (!response.ok) {
       const text = await response.text();
-      return res.status(500).json({ ok: false, error: 'OpenAI error: ' + text });
+      return res.status(500).json({ ok: false, error: 'OpenRouter error: ' + text });
     }
 
     const data = await response.json();
-    // Based on OpenAI Chat Completions v1 spec
+    // Based on OpenRouter Chat Completions v1 spec (compatible OpenAI)
     let reply = (data.choices && data.choices[0] && data.choices[0].message) ? data.choices[0].message.content : null;
     // Post-process the reply to enforce constraints in case the model didn't follow them
-    function formatReply(raw, userMessage, stylize) {
+    function formatReply(raw, userMessage, stylize, activeKnowledge) {
       if (!raw || typeof raw !== 'string') return raw;
       // normalize CRLF
       let r = raw.replace(/\r\n/g, '\n');
@@ -367,7 +408,7 @@ app.post('/chat', async (req, res) => {
       if (noInfoRegex.test(r)) {
         // If the user asked about dogs but our KB is about cats, explicitly state the mismatch
         const mention = detectAnimalFromMessage(userMessage);
-        if (mention === 'dog' && knowledgeBase && knowledgeBase.toLowerCase().includes('maine coon')) {
+        if (mention === 'dog' && activeKnowledge && activeKnowledge.toLowerCase().includes('maine coon')) {
           const mismatchMsg = `Je remarque que votre question porte sur un chien, alors que ma base est consacrée aux chats (Maine Coon). Souhaitez-vous que je :`;
           // Prepend mismatch message but keep everything concise
           const newAlt = mismatchMsg + '\n\n' + buildFallbackMessage(userMessage, !!stylize);
@@ -400,7 +441,7 @@ app.post('/chat', async (req, res) => {
       }
       return r;
     }
-    const finalReply = formatReply(reply, message, stylizeResponse);
+    const finalReply = formatReply(reply, message, stylizeResponse, selectedKnowledge);
     // Return a trimmed and constrained reply: keep raw response and the original data for debugging
     res.json({ ok: true, reply: finalReply, data });
   } catch (err) {
